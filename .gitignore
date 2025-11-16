@@ -188,3 +188,17 @@ test-reports/
 
 # Reference project (no commitear)
 insights_backend/
+
+# Key vision google
+key_google_visio.json
+
+# Key auth jwt
+key_auth_jwt.json
+
+# Key auth jwt
+key_auth_jwt.json
+
+# Key auth jwt
+key_auth_jwt.json
+# Google Cloud credentials
+credentials/
