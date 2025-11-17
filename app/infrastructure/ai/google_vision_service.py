@@ -3,9 +3,13 @@
 This module provides image analysis functionality using Google Cloud Vision API.
 """
 
+import os
+
 from google.api_core.exceptions import GoogleAPIError, ResourceExhausted, ServiceUnavailable
 from google.cloud import vision
+from google.oauth2 import service_account
 
+from app.core.config import settings
 from app.core.exceptions import (
     AIServiceException,
     AIServiceRateLimitException,
@@ -30,11 +34,21 @@ class GoogleVisionService(IAIService):
         """Initialize the Google Vision client.
 
         The client uses credentials from GOOGLE_APPLICATION_CREDENTIALS
-        environment variable.
+        environment variable or from settings.
         """
         try:
-            self.client = vision.ImageAnnotatorClient()
-            logger.info("google_vision_client_initialized")
+            # Get credentials path from settings or environment
+            credentials_path = settings.google_application_credentials or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+            if credentials_path and os.path.exists(credentials_path):
+                # Load credentials from file explicitly
+                credentials = service_account.Credentials.from_service_account_file(credentials_path)
+                self.client = vision.ImageAnnotatorClient(credentials=credentials)
+                logger.info("google_vision_client_initialized", credentials_path=credentials_path)
+            else:
+                # Fallback to default credentials
+                self.client = vision.ImageAnnotatorClient()
+                logger.info("google_vision_client_initialized", credentials="default")
         except Exception as e:
             logger.error("google_vision_client_init_failed", error=str(e))
             raise AIServiceException(f"Failed to initialize Google Vision client: {e}") from e
