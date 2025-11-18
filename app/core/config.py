@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # Application Settings
     # ============================================================================
     app_name: str = Field(default="Kush Image Analyzer API", description="Application name")
-    environment: Literal["development", "staging", "production"] = Field(
+    environment: Literal["development", "staging", "production", "test"] = Field(
         default="development", description="Application environment"
     )
     debug: bool = Field(default=False, description="Debug mode")
