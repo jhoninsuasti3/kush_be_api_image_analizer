@@ -49,110 +49,94 @@ Backend API serverless para análisis inteligente de imágenes con IA. La aplica
 └─────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Desarrollo Local)
 
 ### Prerrequisitos
 
-- Python 3.11+
-- Poetry 1.6+
-- Docker & Docker Compose
-- AWS CLI (para deployment)
-- Cuenta Google Cloud (para Vision API)
+- Docker 20.10+
+- Docker Compose 2.0+
 
 ### Instalación
 
 1. **Clonar el repositorio**:
 ```bash
-git clone https://github.com/yourusername/kush_be_api_image_analizer.git
+git clone <repository-url>
 cd kush_be_api_image_analizer
 ```
 
-2. **Instalar dependencias con Poetry**:
+2. **Configurar variables de entorno**:
 ```bash
-# Instalar todas las dependencias (producción + desarrollo)
-make install-all
-
-# O manualmente:
-poetry install --with code-quality,test
+cp .env.example .env
 ```
 
-3. **Configurar variables de entorno**:
+3. **Iniciar servicios con Docker**:
 ```bash
-# Copiar template de .env
-make env
+docker compose up --build
 
-# Editar .env con tus valores
-nano .env
-```
-
-4. **Configurar Google Cloud Vision**:
-- Crear proyecto en [Google Cloud Console](https://console.cloud.google.com/)
-- Habilitar Vision API
-- Crear service account y descargar JSON key
-- Configurar `GOOGLE_APPLICATION_CREDENTIALS` en `.env`
-
-5. **Iniciar servicios locales con Docker**:
-```bash
-# Inicia API + DynamoDB Local
+# O usando Makefile
 make docker-up
 ```
 
-6. **Crear tablas DynamoDB**:
-```bash
-make create-tables
-```
-
-7. **Acceder a la API**:
+**¡Listo!** Los servicios están corriendo:
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-- Health: http://localhost:8000/health
+- Health: http://localhost:8000/api/v1/health
+- DynamoDB Local: http://localhost:8001
+
+### Verificar instalación
+
+```bash
+# Health check
+curl http://localhost:8000/api/v1/health
+
+# Debe retornar: {"status": "healthy", ...}
+```
+
+### Configuración de Google Cloud Vision (Opcional)
+
+Para habilitar el análisis de imágenes con IA:
+
+1. **Obtener credenciales** de Google Cloud (ver [GOOGLE_CLOUD_SETUP.md](./documentation/GOOGLE_CLOUD_SETUP.md))
+2. **Guardar** el archivo JSON en `credentials/google-vision-credentials.json`
+3. **Reiniciar** servicios: `docker compose restart api`
+
+**Nota**: La API funciona sin Google Cloud, pero el endpoint `/api/v1/analyze` retornará error. Los endpoints de autenticación funcionan normalmente.
 
 ## 📚 Comandos Disponibles
 
-### Desarrollo
+### Docker (Desarrollo Local)
 ```bash
-make run              # Iniciar servidor de desarrollo
-make dev              # Alias de 'make run'
-make help             # Ver todos los comandos
+make docker-up           # Iniciar servicios (foreground)
+make docker-up-d         # Iniciar servicios (background)
+make docker-down         # Detener servicios
+make docker-down-clean   # Detener y limpiar base de datos
+make docker-logs         # Ver logs de todos los servicios
+make docker-logs-api     # Ver logs solo de la API
+make docker-restart      # Reiniciar servicios
+make docker-shell        # Abrir shell en el container
+make docker-test         # Ejecutar tests dentro del container
+make docker-test-cov     # Tests con coverage
+```
+
+### Testing (Dentro del container)
+```bash
+docker compose exec api pytest tests/              # Todos los tests
+docker compose exec api pytest tests/unit/         # Solo unitarios
+docker compose exec api pytest tests/integration/  # Solo integración
+docker compose exec api pytest --cov=app           # Con coverage
 ```
 
 ### Calidad de Código
 ```bash
 make lint             # Ejecutar linters (ruff + mypy)
 make format           # Formatear código automáticamente
-make pre-commit       # Ejecutar pre-commit hooks
-```
-
-### Testing
-```bash
-make test             # Ejecutar todos los tests
-make test-cov         # Tests con reporte de coverage
-make test-unit        # Solo tests unitarios
-make test-integration # Solo tests de integración
-```
-
-### Docker
-```bash
-make docker-build     # Construir imagen Docker
-make docker-up        # Iniciar servicios con compose
-make docker-down      # Detener servicios
-make docker-logs      # Ver logs de containers
-```
-
-### Deployment
-```bash
-make deploy-dev       # Deploy a desarrollo
-make deploy-staging   # Deploy a staging
-make deploy-prod      # Deploy a producción
-make logs-dev         # Ver logs de desarrollo
+make check            # Ejecutar lint + tests + coverage
 ```
 
 ### Utilidades
 ```bash
+make help             # Ver todos los comandos disponibles
 make clean            # Limpiar archivos temporales
-make check            # Ejecutar lint + tests + coverage
-make ci               # Simular CI pipeline localmente
 ```
 
 ## 📖 API Endpoints
@@ -195,12 +179,14 @@ GET /ready        # Readiness check (incluye DynamoDB)
 
 ## 🧪 Testing
 
+El proyecto cuenta con **201+ tests profesionales** (unitarios e integración) con coverage >70%.
+
 ```bash
-# Ejecutar todos los tests
-poetry run pytest
+# Ejecutar todos los tests (dentro del container)
+docker compose exec api pytest tests/
 
 # Con coverage
-poetry run pytest --cov=app --cov-report=html
+docker compose exec api pytest tests/ --cov=app --cov-report=html
 
 # Ver reporte de coverage
 open htmlcov/index.html
@@ -209,60 +195,16 @@ open htmlcov/index.html
 **Estructura de tests**:
 ```
 tests/
-├── unit/              # Tests unitarios
+├── unit/              # Tests unitarios (106 tests)
 │   ├── test_core/
 │   ├── test_domain/
 │   └── test_infrastructure/
-└── integration/       # Tests de integración
-    ├── test_auth_flow.py
-    └── test_analyze_api.py
+└── integration/       # Tests de integración (95 tests)
+    ├── test_auth_endpoints.py
+    └── test_analyze_endpoint.py
 ```
 
-## 🐳 Docker
-
-### Desarrollo Local
-```bash
-# Iniciar todos los servicios
-docker-compose up
-
-# Solo DynamoDB Local
-docker-compose up dynamodb-local
-```
-
-### Build de Producción
-```bash
-# Construir imagen
-docker build -t kush-image-analyzer:latest .
-
-# Ejecutar container
-docker run -p 8000:8000 --env-file .env kush-image-analyzer:latest
-```
-
-## ☁️ AWS Deployment
-
-### Preparación
-1. Configurar AWS CLI:
-```bash
-aws configure
-```
-
-2. Crear tabla DynamoDB en AWS:
-```bash
-aws dynamodb create-table \
-  --table-name kush-users-prod \
-  --attribute-definitions AttributeName=email,AttributeType=S \
-  --key-schema AttributeName=email,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST
-```
-
-### Deploy con SAM
-```bash
-# Deploy a desarrollo
-sam build && sam deploy --config-env dev
-
-# Deploy a producción
-sam build && sam deploy --config-env prod
-```
+Ver [TESTING_GUIDE.md](./documentation/TESTING_GUIDE.md) para más detalles.
 
 ## 🔐 Seguridad
 
@@ -311,15 +253,17 @@ kush_be_api_image_analizer/
 │   ├── domain/            # Models y ports
 │   ├── infrastructure/    # AI, persistence, validation
 │   ├── application/       # Business logic
-│   ├── config/            # App configuration
 │   ├── v1/                # API v1 (versioned)
 │   └── main.py            # Entry point
+├── credentials/           # Credenciales (ignorado por Git)
+│   ├── .gitignore        # Ignora todos los archivos sensibles
+│   └── README.md         # Instrucciones de uso
 ├── tests/                 # Tests unitarios e integración
+├── handlers/              # Lambda handlers para AWS
+├── documentation/         # Documentación técnica
 ├── scripts/               # Scripts de utilidad
-├── .github/workflows/     # CI/CD pipelines
-├── Dockerfile             # Container definition
+├── Dockerfile             # Container definition (multi-stage)
 ├── docker-compose.yml     # Local services
-├── template.yaml          # AWS SAM template
 ├── pyproject.toml         # Dependencies + config
 └── Makefile               # Development commands
 ```
@@ -338,18 +282,13 @@ main (production)
         └── feature/your-feature-name
 ```
 
-## 📝 Roadmap
+## 📚 Documentación Adicional
 
-- [x] **FASE 1**: Foundation & Setup
-- [ ] **FASE 2**: Core & Domain Layer
-- [ ] **FASE 3**: Infrastructure - DynamoDB
-- [ ] **FASE 4**: Infrastructure - Google Vision
-- [ ] **FASE 5**: Application Layer & Auth API
-- [ ] **FASE 6**: Image Analysis API
-- [ ] **FASE 7**: Serverless & Docker
-- [ ] **FASE 8**: CI/CD & Observability
-
-Ver [documentation_tech.md](./documentation_tech.md) para detalles completos.
+- **[DOCKER_QUICKSTART.md](./DOCKER_QUICKSTART.md)** - Guía completa de Docker (troubleshooting, desarrollo)
+- **[GOOGLE_CLOUD_SETUP.md](./documentation/GOOGLE_CLOUD_SETUP.md)** - Configuración de Google Cloud Vision
+- **[TESTING_GUIDE.md](./documentation/TESTING_GUIDE.md)** - Guía completa de testing
+- **[SERVERLESS_ARCHITECTURE.md](./documentation/SERVERLESS_ARCHITECTURE.md)** - Arquitectura serverless (AWS Lambda)
+- **[documentation_tech.md](./documentation/documentation_tech.md)** - Documentación técnica detallada
 
 ## 📄 Licencia
 
@@ -358,7 +297,3 @@ Este proyecto es privado y confidencial.
 ## 👨‍💻 Autor
 
 **jhonmo**
-
----
-
-**Documentación Técnica Completa**: Ver [documentation_tech.md](./documentation_tech.md)

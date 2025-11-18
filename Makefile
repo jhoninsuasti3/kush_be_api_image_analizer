@@ -100,24 +100,63 @@ dev: run
 # DOCKER
 # ============================================================================
 
-## docker-build: Build Docker image
+## docker-build: Build Docker image (development)
 docker-build:
-	@echo "🐳 Building Docker image..."
-	docker build -t kush-image-analyzer:latest .
+	@echo "🐳 Building Docker image (development)..."
+	docker build --target development -t kush-image-analyzer:dev .
 
-## docker-up: Start all services with docker-compose
+## docker-build-prod: Build Docker image (production)
+docker-build-prod:
+	@echo "🐳 Building Docker image (production)..."
+	docker build --target production -t kush-image-analyzer:prod .
+
+## docker-up: Start all services with docker compose
 docker-up:
 	@echo "🐳 Starting Docker services..."
-	docker-compose up --build
+	docker compose up --build
+
+## docker-up-d: Start all services in background
+docker-up-d:
+	@echo "🐳 Starting Docker services in background..."
+	docker compose up -d --build
 
 ## docker-down: Stop all Docker services
 docker-down:
 	@echo "🛑 Stopping Docker services..."
-	docker-compose down -v
+	docker compose down
 
-## docker-logs: View Docker logs
+## docker-down-clean: Stop and remove volumes (clean database)
+docker-down-clean:
+	@echo "🛑 Stopping Docker services and cleaning volumes..."
+	docker compose down -v
+
+## docker-logs: View all Docker logs
 docker-logs:
-	docker-compose logs -f
+	docker compose logs -f
+
+## docker-logs-api: View API logs only
+docker-logs-api:
+	docker compose logs -f api
+
+## docker-restart: Restart all services
+docker-restart:
+	@echo "🔄 Restarting Docker services..."
+	docker compose restart
+
+## docker-shell: Open shell in API container
+docker-shell:
+	@echo "🐚 Opening shell in API container..."
+	docker compose exec api sh
+
+## docker-test: Run tests inside Docker container
+docker-test:
+	@echo "🧪 Running tests in Docker container..."
+	docker compose exec api pytest tests/
+
+## docker-test-cov: Run tests with coverage inside Docker
+docker-test-cov:
+	@echo "🧪 Running tests with coverage in Docker container..."
+	docker compose exec api pytest tests/ --cov=app --cov-report=html
 
 # ============================================================================
 # AWS / DATABASE
@@ -129,33 +168,53 @@ create-tables:
 	poetry run python scripts/create_tables.py
 
 # ============================================================================
-# DEPLOYMENT
+# SERVERLESS DEPLOYMENT
 # ============================================================================
 
-## sam-build: Build SAM application
-sam-build:
-	@echo "🏗️  Building SAM application..."
-	sam build
+## sls-install: Install Serverless Framework dependencies
+sls-install:
+	@echo "📦 Installing Serverless Framework dependencies..."
+	npm install
 
-## sam-local: Run SAM application locally
-sam-local: sam-build
-	@echo "🏃 Running SAM application locally..."
-	sam local start-api
+## sls-start: Start local development server
+sls-start:
+	@echo "🚀 Starting local serverless development..."
+	npm run start
 
-## deploy-dev: Deploy to development environment
-deploy-dev: sam-build
+## sls-deploy-dev: Deploy to development environment
+sls-deploy-dev:
 	@echo "🚀 Deploying to development..."
-	sam deploy --config-env dev
+	./scripts/deploy.sh dev
 
-## deploy-staging: Deploy to staging environment
-deploy-staging: sam-build
+## sls-deploy-staging: Deploy to staging environment
+sls-deploy-staging:
 	@echo "🚀 Deploying to staging..."
-	sam deploy --config-env staging
+	./scripts/deploy.sh staging
 
-## deploy-prod: Deploy to production environment
-deploy-prod: sam-build
+## sls-deploy-prod: Deploy to production environment
+sls-deploy-prod:
 	@echo "🚀 Deploying to production..."
-	sam deploy --config-env prod
+	./scripts/deploy.sh prod
+
+## sls-info: Show deployment information
+sls-info:
+	@echo "📊 Deployment information..."
+	serverless info
+
+## sls-logs-auth: Tail auth Lambda logs
+sls-logs-auth:
+	@echo "📜 Tailing auth Lambda logs..."
+	npm run logs:auth
+
+## sls-logs-analyze: Tail analysis Lambda logs
+sls-logs-analyze:
+	@echo "📜 Tailing analysis Lambda logs..."
+	npm run logs:analyze
+
+## sls-remove: Remove serverless stack
+sls-remove:
+	@echo "🗑️  Removing serverless stack..."
+	serverless remove
 
 # ============================================================================
 # LOGS
