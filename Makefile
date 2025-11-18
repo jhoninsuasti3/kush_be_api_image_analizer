@@ -62,9 +62,27 @@ test-unit:
 test-integration:
 	poetry run pytest tests/integration/ -v
 
+## test-e2e: Run only end-to-end tests
+test-e2e:
+	poetry run pytest tests/e2e/ -v
+
+## test-fast: Run tests without coverage (faster)
+test-fast:
+	@echo "🧪 Running tests (fast mode)..."
+	poetry run pytest tests/ -v -x --ff
+
 ## test-watch: Run tests in watch mode (requires pytest-watch)
 test-watch:
 	poetry run ptw tests/ -v
+
+## test-failed: Re-run only failed tests
+test-failed:
+	poetry run pytest tests/ --lf -v
+
+## test-summary: Run tests with summary report
+test-summary:
+	@echo "🧪 Running tests with summary..."
+	poetry run pytest tests/ -v --tb=short --cov=app --cov-report=term-missing:skip-covered
 
 # ============================================================================
 # DEVELOPMENT SERVER
