@@ -1,0 +1,285 @@
+service: kush-image-analyzer
+
+frameworkVersion: '3'
+
+# ============================================================================
+# Provider Configuration
+# ============================================================================
+provider:
+  name: aws
+  runtime: python3.11
+  region: ${env:AWS_REGION, 'us-east-1'}
+  stage: ${env:ENV, 'dev'}
+  versionFunctions: false  # Don't create versions for each deployment
+
+  # API Gateway
+  apiGateway:
+    shouldStartNameWithService: true
+    metrics: true
+    apiKeys:
+      - ${self:provider.stage}-${self:service}-api-key
+
+  # IAM Role
+  iam:
+    role:
+      statements:
+        # DynamoDB permissions
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.dynamodbTable}
+
+        # Secrets Manager permissions
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+            - secretsmanager:DescribeSecret
+          Resource:
+            - arn:aws:secretsmanager:${self:provider.region}:*:secret:${self:provider.stage}/kush/*
+
+        # CloudWatch Logs
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: '*'
+
+  # Environment variables (shared across all functions)
+  environment:
+    ENVIRONMENT: ${self:provider.stage}
+    LOG_LEVEL: ${env:LOG_LEVEL, 'INFO'}
+    DYNAMODB_TABLE_NAME: ${self:custom.dynamodbTable}
+    AWS_REGION: ${self:provider.region}
+    # Secrets will be injected from AWS Secrets Manager in production
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY, 'dev-secret-key-CHANGE-IN-PRODUCTION-min32chars'}
+
+  # Lambda layers
+  layers:
+    - { Ref: PythonRequirementsLambdaLayer }
+
+  # Stack tags
+  stackTags:
+    Project: KushImageAnalyzer
+    Environment: ${self:provider.stage}
+    ManagedBy: Serverless
+
+  # Logging
+  logs:
+    restApi: true
+
+  # Tracing
+  tracing:
+    apiGateway: true
+    lambda: true
+
+# ============================================================================
+# Custom Variables
+# ============================================================================
+custom:
+  # DynamoDB table name by environment
+  dynamodbTable: kush-users-${self:provider.stage}
+
+  # Python requirements layer configuration
+  pythonRequirements:
+    slim: true
+    slimPatterns:
+      - 'botocore/**'
+      - 'boto3/**'
+      - '**/*.pyc'
+      - '**/*.pyo'
+      - '**/__pycache__/**'
+      - 'tests/**'
+      - 'pytest/**'
+    layer:
+      name: ${self:provider.stage}-${self:service}-requirements
+      description: Python requirements lambda layer
+      compatibleRuntimes:
+        - python3.11
+      licenseInfo: MIT
+      allowedAccounts:
+        - '*'
+    noDeploy:
+      - pytest
+      - pytest-cov
+      - pytest-asyncio
+      - pytest-mock
+      - boto3
+      - botocore
+      - httpx
+      - faker
+      - freezegun
+      - respx
+      - moto
+      - ruff
+      - mypy
+      - pre-commit
+
+  # Serverless offline (for local development)
+  serverless-offline:
+    httpPort: 8000
+    lambdaPort: 3002
+    host: 0.0.0.0
+
+  # Custom domain configuration (optional)
+  customDomain:
+    domainName: ${self:custom.domains.${self:provider.stage}, ''}
+    basePath: ''
+    certificateName: '*.kush-api.com'  # Update with your domain
+    createRoute53Record: true
+    endpointType: REGIONAL
+
+  domains:
+    prod: api.kush-api.com
+    staging: api-staging.kush-api.com
+    dev: ''  # No custom domain for dev
+
+# ============================================================================
+# Plugins
+# ============================================================================
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+  # - serverless-domain-manager  # Uncomment when ready to use custom domain
+
+# ============================================================================
+# Package Configuration
+# ============================================================================
+package:
+  individually: true
+  patterns:
+    - '!.git/**'
+    - '!.github/**'
+    - '!.vscode/**'
+    - '!.venv/**'
+    - '!.pytest_cache/**'
+    - '!.mypy_cache/**'
+    - '!.ruff_cache/**'
+    - '!tests/**'
+    - '!documentation/**'
+    - '!htmlcov/**'
+    - '!node_modules/**'
+    - '!*.md'
+    - '!.env*'
+    - '!.pre-commit-config.yaml'
+    - '!.gitignore'
+    - '!Makefile'
+    - '!docker-compose.yml'
+    - '!Dockerfile'
+    - 'app/**'
+    - 'handlers/**'
+
+# ============================================================================
+# Functions (imported from separate files)
+# ============================================================================
+functions:
+  # Auth Lambda functions
+  - ${file(handlers/auth/serverless.yml)}
+
+  # Image Analysis Lambda functions
+  - ${file(handlers/analyze/serverless.yml)}
+
+  # Health Check Lambda functions
+  - ${file(handlers/health/serverless.yml)}
+
+# ============================================================================
+# Resources (DynamoDB, etc.)
+# ============================================================================
+resources:
+  Resources:
+    # DynamoDB Users Table
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.dynamodbTable}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        SSESpecification:
+          SSEEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+          - Key: Project
+            Value: KushImageAnalyzer
+
+    # CloudWatch Log Group for API Gateway
+    ApiGatewayLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: /aws/apigateway/${self:service}-${self:provider.stage}
+        RetentionInDays: !If [IsProduction, 30, 7]
+
+    # CloudWatch Alarms
+    AuthErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-auth-errors
+        AlarmDescription: Alert when auth function has high error rate
+        MetricName: Errors
+        Namespace: AWS/Lambda
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 10
+        ComparisonOperator: GreaterThanThreshold
+        Dimensions:
+          - Name: FunctionName
+            Value: !Ref AuthRegisterLambdaFunction
+        TreatMissingData: notBreaching
+
+    AnalysisErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-analysis-errors
+        AlarmDescription: Alert when analysis function has high error rate
+        MetricName: Errors
+        Namespace: AWS/Lambda
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 10
+        ComparisonOperator: GreaterThanThreshold
+        Dimensions:
+          - Name: FunctionName
+            Value: !Ref AnalyzeImageLambdaFunction
+        TreatMissingData: notBreaching
+
+  # Conditions
+  Conditions:
+    IsProduction: !Equals [${self:provider.stage}, 'prod']
+
+  # Outputs
+  Outputs:
+    ApiGatewayUrl:
+      Description: API Gateway endpoint URL
+      Value:
+        Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${self:provider.stage}
+      Export:
+        Name: ${self:service}-${self:provider.stage}-ApiUrl
+
+    UsersTableName:
+      Description: DynamoDB Users Table Name
+      Value: !Ref UsersTable
+      Export:
+        Name: ${self:service}-${self:provider.stage}-UsersTableName
+
+    UsersTableArn:
+      Description: DynamoDB Users Table ARN
+      Value: !GetAtt UsersTable.Arn
+      Export:
+        Name: ${self:service}-${self:provider.stage}-UsersTableArn

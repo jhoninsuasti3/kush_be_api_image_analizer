@@ -1,0 +1,28 @@
+# Analysis Lambda Configuration
+# Handles image analysis endpoints
+
+analyzeImage:
+  handler: handlers/analyze/handler.lambda_handler
+  memorySize: 1024  # More memory for image processing
+  timeout: 60       # Longer timeout for AI operations
+  environment:
+    SERVICE_NAME: analysis
+    MAX_FILE_SIZE_MB: 5
+    ALLOWED_EXTENSIONS: jpg,jpeg,png,webp
+  events:
+    - http:
+        path: api/v1/analyze
+        method: post
+        cors: true
+
+analyzeHealth:
+  handler: handlers/analyze/handler.lambda_handler
+  memorySize: 512
+  timeout: 15
+  environment:
+    SERVICE_NAME: analysis
+  events:
+    - http:
+        path: health
+        method: get
+        cors: true
