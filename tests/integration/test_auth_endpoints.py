@@ -1,12 +1,8 @@
 """Integration tests for authentication endpoints."""
 
 from typing import Any
-from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
-
-from app.domain.models import User
 
 
 class TestAuthEndpoints:
@@ -28,9 +24,7 @@ class TestAuthEndpoints:
         assert data["is_active"] is True
         assert "hashed_password" not in data  # Should not expose password
 
-    def test_register_duplicate_email(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_register_duplicate_email(self, client: TestClient, users_table: Any) -> None:
         """Test registration with duplicate email."""
         user_data = {"email": "duplicate@example.com", "password": "StrongPassword123!"}
 
@@ -182,9 +176,7 @@ class TestAuthEndpoints:
 
         assert response.status_code == 401
 
-    def test_get_current_user_expired_token(
-        self, client: TestClient, expired_token: str
-    ) -> None:
+    def test_get_current_user_expired_token(self, client: TestClient, expired_token: str) -> None:
         """Test getting current user with expired token."""
         response = client.get(
             "/api/v1/auth/me",
@@ -241,9 +233,7 @@ class TestAuthEndpoints:
         assert me_response.status_code == 200
         assert me_response.json()["email"] == email
 
-    def test_multiple_users_can_register_and_login(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_multiple_users_can_register_and_login(self, client: TestClient, users_table: Any) -> None:
         """Test that multiple users can register and login independently."""
         users = [
             {"email": "user1@example.com", "password": "Password1!"},
@@ -276,9 +266,7 @@ class TestAuthEndpoints:
     # Edge Cases
     # ========================================================================
 
-    def test_register_with_special_characters_in_email(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_register_with_special_characters_in_email(self, client: TestClient, users_table: Any) -> None:
         """Test registration with special characters in email."""
         user_data = {"email": "user+tag@example.co.uk", "password": "StrongPassword123!"}
 
@@ -287,9 +275,7 @@ class TestAuthEndpoints:
         assert response.status_code == 201
         assert response.json()["email"] == user_data["email"]
 
-    def test_login_case_sensitive_email(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_login_case_sensitive_email(self, client: TestClient, users_table: Any) -> None:
         """Test that login email is case-sensitive."""
         register_data = {"email": "Test@Example.com", "password": "Password123!"}
         client.post("/api/v1/auth/register", json=register_data)

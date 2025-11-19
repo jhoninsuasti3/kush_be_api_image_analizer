@@ -7,26 +7,22 @@ This Lambda handles system health and readiness checks:
 Lightweight and fast-responding.
 """
 
+from fastapi import FastAPI
 from mangum import Mangum
 
+from app.config.exception_handlers import setup_exception_handlers
+from app.config.middlewares import setup_middlewares
+from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
+from app.v1.views.health import router as health_router
 
 # Configure logging before creating the app
 configure_logging()
 logger = get_logger(__name__)
 
 
-def create_health_app():
-    """Create minimal FastAPI app for health endpoints only.
-
-    Lazy loading to optimize cold start.
-    """
-    from fastapi import FastAPI
-
-    from app.config.exception_handlers import setup_exception_handlers
-    from app.config.middlewares import setup_middlewares
-    from app.core.config import settings
-    from app.v1.views.health import router as health_router
+def create_health_app() -> FastAPI:
+    """Create minimal FastAPI app for health endpoints only."""
 
     app = FastAPI(
         title=f"{settings.app_name} - Health Service",

@@ -3,9 +3,8 @@
 from typing import Any
 
 import pytest
-from botocore.exceptions import ClientError
 
-from app.core.exceptions import DatabaseException, UserAlreadyExistsException, UserNotFoundException
+from app.core.exceptions import UserAlreadyExistsException, UserNotFoundException
 from app.domain.models import User
 from app.infrastructure.persistence.user_repository import DynamoDBUserRepository
 
@@ -171,9 +170,7 @@ class TestDynamoDBUserRepository:
 
     def test_create_user_with_special_characters_in_email(self, repository: DynamoDBUserRepository) -> None:
         """Test creating user with special characters in email."""
-        special_user = User(
-            email="test+tag@example.co.uk", hashed_password="hashed_password", is_active=True
-        )
+        special_user = User(email="test+tag@example.co.uk", hashed_password="hashed_password", is_active=True)
 
         created_user = repository.create(special_user)
         assert created_user.email == special_user.email

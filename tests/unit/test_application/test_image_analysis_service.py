@@ -31,9 +31,7 @@ class TestImageAnalysisService:
         return Mock(spec=IAIService)
 
     @pytest.fixture
-    def image_analysis_service(
-        self, mock_file_validator: Mock, mock_ai_service: Mock
-    ) -> ImageAnalysisService:
+    def image_analysis_service(self, mock_file_validator: Mock, mock_ai_service: Mock) -> ImageAnalysisService:
         """Create ImageAnalysisService with mocked dependencies."""
         return ImageAnalysisService(
             file_validator=mock_file_validator,
@@ -90,9 +88,7 @@ class TestImageAnalysisService:
         assert result.tags[0].label == "Cat"
 
         # Verify calls
-        mock_file_validator.validate_file.assert_called_once_with(
-            valid_image_bytes, filename, content_type
-        )
+        mock_file_validator.validate_file.assert_called_once_with(valid_image_bytes, filename, content_type)
         mock_ai_service.analyze_image.assert_called_once_with(valid_image_bytes)
 
     def test_analyze_image_multiple_tags(
@@ -115,9 +111,7 @@ class TestImageAnalysisService:
 
         mock_ai_service.analyze_image.return_value = result_with_many_tags
 
-        result = image_analysis_service.analyze_image(
-            valid_image_bytes, "dog.jpg", "image/jpeg"
-        )
+        result = image_analysis_service.analyze_image(valid_image_bytes, "dog.jpg", "image/jpeg")
 
         assert len(result.tags) == 5
         assert result.tags[0].confidence > result.tags[-1].confidence
@@ -134,9 +128,7 @@ class TestImageAnalysisService:
         mock_ai_service: Mock,
     ) -> None:
         """Test analysis fails when file is too large."""
-        mock_file_validator.validate_file.side_effect = FileTooLargeException(
-            "File size exceeds 5 MB limit"
-        )
+        mock_file_validator.validate_file.side_effect = FileTooLargeException("File size exceeds 5 MB limit")
 
         with pytest.raises(FileTooLargeException) as exc_info:
             image_analysis_service.analyze_image(valid_image_bytes, "large.jpg", "image/jpeg")
@@ -155,9 +147,7 @@ class TestImageAnalysisService:
         """Test analysis fails with invalid file type."""
         invalid_file = b"This is a text file"
 
-        mock_file_validator.validate_file.side_effect = InvalidFileTypeException(
-            "Invalid file type"
-        )
+        mock_file_validator.validate_file.side_effect = InvalidFileTypeException("Invalid file type")
 
         with pytest.raises(InvalidFileTypeException):
             image_analysis_service.analyze_image(invalid_file, "file.txt", "text/plain")
@@ -173,14 +163,10 @@ class TestImageAnalysisService:
         """Test analysis fails with invalid image format."""
         corrupted_image = b"Not a valid image"
 
-        mock_file_validator.validate_file.side_effect = InvalidImageFormatException(
-            "Invalid image format"
-        )
+        mock_file_validator.validate_file.side_effect = InvalidImageFormatException("Invalid image format")
 
         with pytest.raises(InvalidImageFormatException):
-            image_analysis_service.analyze_image(
-                corrupted_image, "corrupted.jpg", "image/jpeg"
-            )
+            image_analysis_service.analyze_image(corrupted_image, "corrupted.jpg", "image/jpeg")
 
         mock_ai_service.analyze_image.assert_not_called()
 
@@ -196,14 +182,10 @@ class TestImageAnalysisService:
         mock_ai_service: Mock,
     ) -> None:
         """Test analysis fails when AI service raises error."""
-        mock_ai_service.analyze_image.side_effect = AIServiceException(
-            "AI service error"
-        )
+        mock_ai_service.analyze_image.side_effect = AIServiceException("AI service error")
 
         with pytest.raises(AIServiceException) as exc_info:
-            image_analysis_service.analyze_image(
-                valid_image_bytes, "test.jpg", "image/jpeg"
-            )
+            image_analysis_service.analyze_image(valid_image_bytes, "test.jpg", "image/jpeg")
 
         assert "AI service error" in str(exc_info.value)
 
@@ -235,9 +217,7 @@ class TestImageAnalysisService:
         mock_file_validator.validate_file.side_effect = validator_side_effect
         mock_ai_service.analyze_image.side_effect = ai_service_side_effect
 
-        image_analysis_service.analyze_image(
-            valid_image_bytes, "test.jpg", "image/jpeg"
-        )
+        image_analysis_service.analyze_image(valid_image_bytes, "test.jpg", "image/jpeg")
 
         # Validator should be called first
         assert call_order == ["validator", "ai_service"]
@@ -290,9 +270,7 @@ class TestImageAnalysisService:
         result = image_analysis_service.analyze_image(png_bytes, "test.png", "image/png")
 
         assert result == sample_analysis_result
-        mock_file_validator.validate_file.assert_called_once_with(
-            png_bytes, "test.png", "image/png"
-        )
+        mock_file_validator.validate_file.assert_called_once_with(png_bytes, "test.png", "image/png")
 
     def test_analyze_image_with_webp(
         self,
@@ -309,9 +287,7 @@ class TestImageAnalysisService:
 
         mock_ai_service.analyze_image.return_value = sample_analysis_result
 
-        result = image_analysis_service.analyze_image(
-            webp_bytes, "test.webp", "image/webp"
-        )
+        result = image_analysis_service.analyze_image(webp_bytes, "test.webp", "image/webp")
 
         assert result == sample_analysis_result
 
@@ -327,9 +303,7 @@ class TestImageAnalysisService:
 
         mock_ai_service.analyze_image.return_value = empty_result
 
-        result = image_analysis_service.analyze_image(
-            valid_image_bytes, "test.jpg", "image/jpeg"
-        )
+        result = image_analysis_service.analyze_image(valid_image_bytes, "test.jpg", "image/jpeg")
 
         assert len(result.tags) == 0
 
@@ -346,14 +320,10 @@ class TestImageAnalysisService:
 
         mock_ai_service.analyze_image.return_value = sample_analysis_result
 
-        result = image_analysis_service.analyze_image(
-            valid_image_bytes, unicode_filename, "image/jpeg"
-        )
+        result = image_analysis_service.analyze_image(valid_image_bytes, unicode_filename, "image/jpeg")
 
         assert result == sample_analysis_result
-        mock_file_validator.validate_file.assert_called_once_with(
-            valid_image_bytes, unicode_filename, "image/jpeg"
-        )
+        mock_file_validator.validate_file.assert_called_once_with(valid_image_bytes, unicode_filename, "image/jpeg")
 
     def test_analyze_image_single_tag_result(
         self,
@@ -363,15 +333,11 @@ class TestImageAnalysisService:
         mock_ai_service: Mock,
     ) -> None:
         """Test analysis returning single tag."""
-        single_tag_result = ImageAnalysisResult(
-            tags=[Tag(label="Cat", confidence=0.99)]
-        )
+        single_tag_result = ImageAnalysisResult(tags=[Tag(label="Cat", confidence=0.99)])
 
         mock_ai_service.analyze_image.return_value = single_tag_result
 
-        result = image_analysis_service.analyze_image(
-            valid_image_bytes, "cat.jpg", "image/jpeg"
-        )
+        result = image_analysis_service.analyze_image(valid_image_bytes, "cat.jpg", "image/jpeg")
 
         assert len(result.tags) == 1
         assert result.tags[0].label == "Cat"

@@ -124,7 +124,7 @@ class FileValidator(IFileValidator):
                 f"maximum allowed size ({settings.max_file_size_mb} MB)"
             )
 
-    def _validate_extension(self, extension: str, filename: str) -> None:
+    def _validate_extension(self, extension: str, filename: str | None = None) -> None:
         """Validate file extension.
 
         Args:
@@ -134,6 +134,10 @@ class FileValidator(IFileValidator):
         Raises:
             InvalidFileTypeException: If the extension is not allowed.
         """
+        if filename is None:
+            filename = extension
+            extension = Path(extension).suffix.lstrip(".").lower()
+
         if extension not in settings.allowed_extensions_list:
             logger.warning(
                 "invalid_file_extension",
@@ -144,7 +148,7 @@ class FileValidator(IFileValidator):
                 f"File extension '.{extension}' not allowed. Allowed: {', '.join(settings.allowed_extensions_list)}"
             )
 
-    def _validate_content_type(self, content_type: str, filename: str) -> None:
+    def _validate_content_type(self, content_type: str, filename: str | None = None) -> None:
         """Validate MIME content type.
 
         Args:
@@ -154,15 +158,15 @@ class FileValidator(IFileValidator):
         Raises:
             InvalidFileTypeException: If the content type is not an image.
         """
-        if not content_type.startswith("image/"):
+        if not content_type.lower().startswith("image/"):
             logger.warning(
                 "invalid_content_type",
-                filename=filename,
+                filename=filename or "uploaded_file",
                 content_type=content_type,
             )
             raise InvalidFileTypeException(f"Content type '{content_type}' is not an image type")
 
-    def _validate_image_format(self, file_content: bytes, filename: str) -> None:
+    def _validate_image_format(self, file_content: bytes, filename: str | None = None) -> None:
         """Validate that the file is a valid image using Pillow.
 
         Args:
@@ -181,7 +185,7 @@ class FileValidator(IFileValidator):
 
             logger.debug(
                 "image_format_validated",
-                filename=filename,
+                filename=filename or "uploaded_file",
                 format=image.format,
                 size=image.size,
                 mode=image.mode,
@@ -190,7 +194,7 @@ class FileValidator(IFileValidator):
         except Exception as e:
             logger.error(
                 "invalid_image_format",
-                filename=filename,
+                filename=filename or "uploaded_file",
                 error=str(e),
             )
             raise InvalidImageFormatException(f"Invalid or corrupted image file: {e}") from e

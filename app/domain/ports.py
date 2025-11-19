@@ -9,11 +9,80 @@ Following the Ports & Adapters (Hexagonal) architecture pattern.
 
 from abc import ABC, abstractmethod
 
-from app.domain.models import ImageAnalysisResult, User
+from app.domain.models import ImageAnalysis, ImageAnalysisResult, User
 
 # ============================================================================
 # Repository Ports
 # ============================================================================
+
+
+class IImageAnalysisRepository(ABC):
+    """Abstract interface for image analysis repository.
+
+    This port defines the contract for image analysis persistence operations.
+    Infrastructure layer will provide concrete implementations (e.g., DynamoDB).
+    """
+
+    @abstractmethod
+    def create(self, analysis: ImageAnalysis) -> ImageAnalysis:
+        """Create a new image analysis record.
+
+        Args:
+            analysis: The analysis record to create.
+
+        Returns:
+            ImageAnalysis: The created analysis record.
+
+        Raises:
+            DatabaseException: If database operation fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_by_id(self, analysis_id: str) -> ImageAnalysis | None:
+        """Get an analysis record by ID.
+
+        Args:
+            analysis_id: The unique analysis identifier.
+
+        Returns:
+            ImageAnalysis | None: The analysis record if found, None otherwise.
+
+        Raises:
+            DatabaseException: If database operation fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_by_user_email(self, user_email: str, limit: int = 10) -> list[ImageAnalysis]:
+        """Get analysis records for a specific user.
+
+        Args:
+            user_email: The user's email address.
+            limit: Maximum number of records to return (default: 10).
+
+        Returns:
+            list[ImageAnalysis]: List of analysis records, ordered by analyzed_at descending.
+
+        Raises:
+            DatabaseException: If database operation fails.
+        """
+        pass
+
+    @abstractmethod
+    def delete(self, analysis_id: str) -> bool:
+        """Delete an analysis record by ID.
+
+        Args:
+            analysis_id: The unique analysis identifier.
+
+        Returns:
+            bool: True if the record was deleted, False if not found.
+
+        Raises:
+            DatabaseException: If database operation fails.
+        """
+        pass
 
 
 class IUserRepository(ABC):
@@ -24,7 +93,7 @@ class IUserRepository(ABC):
     """
 
     @abstractmethod
-    async def create(self, user: User) -> User:
+    def create(self, user: User) -> User:
         """Create a new user.
 
         Args:
@@ -40,7 +109,7 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_email(self, email: str) -> User | None:
+    def get_by_email(self, email: str) -> User | None:
         """Get a user by email.
 
         Args:
@@ -55,7 +124,7 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    async def update(self, user: User) -> User:
+    def update(self, user: User) -> User:
         """Update an existing user.
 
         Args:
@@ -71,7 +140,7 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    async def delete(self, email: str) -> bool:
+    def delete(self, email: str) -> bool:
         """Delete a user by email.
 
         Args:
@@ -86,7 +155,7 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    async def exists(self, email: str) -> bool:
+    def exists(self, email: str) -> bool:
         """Check if a user exists by email.
 
         Args:
@@ -115,7 +184,7 @@ class IAIService(ABC):
     """
 
     @abstractmethod
-    async def analyze_image(self, image_bytes: bytes) -> ImageAnalysisResult:
+    def analyze_image(self, image_bytes: bytes) -> ImageAnalysisResult:
         """Analyze an image and return detected labels/tags.
 
         Args:
@@ -133,7 +202,7 @@ class IAIService(ABC):
         pass
 
     @abstractmethod
-    async def health_check(self) -> bool:
+    def health_check(self) -> bool:
         """Check if the AI service is available and healthy.
 
         Returns:

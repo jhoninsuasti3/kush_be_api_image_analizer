@@ -3,10 +3,15 @@
 This module provides the business logic for user authentication operations.
 """
 
-from app.core.exceptions import InactiveUserException, InvalidCredentialsException, UserAlreadyExistsException
+from app.core.exceptions import (
+    InactiveUserException,
+    InvalidCredentialsException,
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
 from app.core.logging import get_logger
 from app.core.security import create_token_for_user, get_password_hash, verify_password
-from app.domain.models import Token, User, UserCreate, UserLogin
+from app.domain.models import User, UserCreate, UserLogin
 from app.domain.ports import IUserRepository
 
 logger = get_logger(__name__)
@@ -26,7 +31,7 @@ class AuthService:
         """
         self.user_repository = user_repository
 
-    async def register(self, user_data: UserCreate) -> User:
+    def register(self, user_data: UserCreate) -> User:
         """Register a new user.
 
         Args:
@@ -41,8 +46,7 @@ class AuthService:
         logger.info("user_registration_started", email=user_data.email)
 
         # Check if user already exists
-        existing_user = await self.user_repository.get_by_email(user_data.email)
-        if existing_user:
+        if self.user_repository.exists(user_data.email):
             logger.warning("user_registration_failed_already_exists", email=user_data.email)
             raise UserAlreadyExistsException(f"User with email {user_data.email} already exists")
 
@@ -52,24 +56,25 @@ class AuthService:
         # Create user model
         user = User(
             email=user_data.email,
+            name=user_data.name,
             hashed_password=hashed_password,
             is_active=True,
         )
 
         # Save user to repository
-        created_user = await self.user_repository.create(user)
+        created_user = self.user_repository.create(user)
 
         logger.info("user_registered_successfully", email=created_user.email)
         return created_user
 
-    async def login(self, credentials: UserLogin) -> Token:
+    def login(self, credentials: UserLogin) -> str:
         """Authenticate a user and generate access token.
 
         Args:
             credentials: User login credentials (email and password).
 
         Returns:
-            Token: JWT access token.
+            str: JWT access token.
 
         Raises:
             InvalidCredentialsException: If credentials are invalid.
@@ -78,7 +83,11 @@ class AuthService:
         logger.info("user_login_attempt", email=credentials.email)
 
         # Get user from repository
-        user = await self.user_repository.get_by_email(credentials.email)
+        try:
+            user = self.user_repository.get_by_email(credentials.email)
+        except UserNotFoundException:
+            logger.warning("login_failed_user_not_found", email=credentials.email)
+            raise InvalidCredentialsException("Invalid email or password") from None
 
         # Verify user exists
         if not user:
@@ -96,13 +105,13 @@ class AuthService:
             raise InactiveUserException("User account is inactive")
 
         # Generate access token
-        access_token = create_token_for_user(user.email)
+        access_token = create_token_for_user(user)
 
         logger.info("user_logged_in_successfully", email=user.email)
 
-        return Token(access_token=access_token, token_type="bearer")
+        return access_token
 
-    async def get_current_user(self, email: str) -> User:
+    def get_current_user(self, email: str) -> User:
         """Get current user by email from token.
 
         Args:
@@ -114,11 +123,15 @@ class AuthService:
         Raises:
             InvalidCredentialsException: If user not found or inactive.
         """
-        user = await self.user_repository.get_by_email(email)
+        try:
+            user = self.user_repository.get_by_email(email)
+        except UserNotFoundException:
+            logger.warning("current_user_not_found", email=email)
+            raise
 
         if not user:
             logger.warning("current_user_not_found", email=email)
-            raise InvalidCredentialsException("Could not validate credentials")
+            raise UserNotFoundException(f"User with email {email} not found")
 
         if not user.is_active:
             logger.warning("current_user_inactive", email=email)

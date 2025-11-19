@@ -96,3 +96,39 @@ def get_users_table():  # type: ignore[no-untyped-def]
     except Exception as e:
         logger.error("users_table_load_failed", error=str(e))
         raise DatabaseConnectionException(f"Failed to load users table: {e}") from e
+
+
+def get_analysis_table():  # type: ignore[no-untyped-def]
+    """Get the image analysis table.
+
+    Returns:
+        DynamoDB image analysis table resource.
+
+    Raises:
+        DatabaseConnectionException: If table doesn't exist or connection fails.
+    """
+    try:
+        dynamodb = get_dynamodb_resource()
+        table_name = settings.dynamodb_analysis_table
+        table = dynamodb.Table(table_name)
+
+        # Verify table exists by loading its metadata
+        table.load()
+
+        logger.debug(
+            "analysis_table_loaded",
+            table_name=table_name,
+            status=table.table_status,
+        )
+
+        return table
+
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ResourceNotFoundException":
+            error_msg = f"Table '{settings.dynamodb_analysis_table}' not found"
+            logger.error("analysis_table_not_found", table_name=settings.dynamodb_analysis_table)
+            raise DatabaseConnectionException(error_msg) from e
+        raise
+    except Exception as e:
+        logger.error("analysis_table_load_failed", error=str(e))
+        raise DatabaseConnectionException(f"Failed to load analysis table: {e}") from e

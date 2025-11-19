@@ -4,7 +4,6 @@ from io import BytesIO
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -39,9 +38,7 @@ class TestCompleteUserFlow:
         token = token_data["access_token"]
 
         # Step 3: Verify token works by getting current user
-        me_response = client.get(
-            "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
-        )
+        me_response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
 
         assert me_response.status_code == 200
         current_user = me_response.json()
@@ -64,9 +61,7 @@ class TestCompleteUserFlow:
             ]
         )
 
-        with patch(
-            "app.infrastructure.ai.google_vision_service.GoogleVisionService.analyze_image"
-        ) as mock_analyze:
+        with patch("app.infrastructure.ai.google_vision_service.GoogleVisionService.analyze_image") as mock_analyze:
             mock_analyze.return_value = mock_result
 
             # Step 5: Analyze the image
@@ -148,9 +143,7 @@ class TestCompleteUserFlow:
 
         assert response.status_code == 401
 
-    def test_analyze_with_wrong_credentials(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_analyze_with_wrong_credentials(self, client: TestClient, users_table: Any) -> None:
         """Test that analyzing with wrong credentials fails."""
         # Register user
         register_data = {"email": "correct@example.com", "password": "CorrectPassword!"}
@@ -166,9 +159,7 @@ class TestCompleteUserFlow:
     # File Validation Error Flows
     # ========================================================================
 
-    def test_complete_flow_with_invalid_file(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_complete_flow_with_invalid_file(self, client: TestClient, users_table: Any) -> None:
         """Test complete flow with invalid file type."""
         # Register and login
         user_data = {"email": "invalid_file@example.com", "password": "Password123!"}
@@ -189,9 +180,7 @@ class TestCompleteUserFlow:
 
         assert response.status_code == 400
 
-    def test_complete_flow_with_large_file(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_complete_flow_with_large_file(self, client: TestClient, users_table: Any) -> None:
         """Test complete flow with file exceeding size limit."""
         # Register and login
         user_data = {"email": "large_file@example.com", "password": "Password123!"}
@@ -220,9 +209,7 @@ class TestCompleteUserFlow:
     # Multiple Analysis Sessions
     # ========================================================================
 
-    def test_user_can_analyze_multiple_images(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_user_can_analyze_multiple_images(self, client: TestClient, users_table: Any) -> None:
         """Test that a user can analyze multiple images in sequence."""
         # Register and login
         user_data = {"email": "multi@example.com", "password": "Password123!"}
@@ -235,7 +222,7 @@ class TestCompleteUserFlow:
         colors = ["red", "green", "blue", "yellow", "purple"]
         labels = ["Apple", "Grass", "Sky", "Sun", "Flower"]
 
-        for i, (color, label) in enumerate(zip(colors, labels)):
+        for i, (color, label) in enumerate(zip(colors, labels, strict=True)):
             img = Image.new("RGB", (100, 100), color=color)
             img_bytes = BytesIO()
             img.save(img_bytes, format="JPEG")
@@ -243,9 +230,7 @@ class TestCompleteUserFlow:
 
             files = {"file": (f"image_{i}.jpg", img_bytes, "image/jpeg")}
 
-            mock_result = ImageAnalysisResult(
-                tags=[Tag(label=label, confidence=0.90 + i * 0.01)]
-            )
+            mock_result = ImageAnalysisResult(tags=[Tag(label=label, confidence=0.90 + i * 0.01)])
 
             with patch(
                 "app.infrastructure.ai.google_vision_service.GoogleVisionService.analyze_image"
@@ -266,9 +251,7 @@ class TestCompleteUserFlow:
     # Session Persistence Tests
     # ========================================================================
 
-    def test_token_persists_across_multiple_requests(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_token_persists_across_multiple_requests(self, client: TestClient, users_table: Any) -> None:
         """Test that token can be reused for multiple requests."""
         # Register and login
         user_data = {"email": "persist@example.com", "password": "Password123!"}
@@ -280,9 +263,7 @@ class TestCompleteUserFlow:
         # Use the same token for multiple requests
         for _ in range(5):
             # Check user info
-            me_response = client.get(
-                "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
-            )
+            me_response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
             assert me_response.status_code == 200
 
             # Analyze image
@@ -312,9 +293,7 @@ class TestCompleteUserFlow:
     # Different Image Formats Flow
     # ========================================================================
 
-    def test_analyze_different_image_formats(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_analyze_different_image_formats(self, client: TestClient, users_table: Any) -> None:
         """Test analyzing different image formats (JPEG, PNG, WebP)."""
         # Register and login
         user_data = {"email": "formats@example.com", "password": "Password123!"}
@@ -337,9 +316,7 @@ class TestCompleteUserFlow:
 
             files = {"file": (filename, img_bytes, content_type)}
 
-            mock_result = ImageAnalysisResult(
-                tags=[Tag(label=f"{img_format}_Image", confidence=0.94)]
-            )
+            mock_result = ImageAnalysisResult(tags=[Tag(label=f"{img_format}_Image", confidence=0.94)])
 
             with patch(
                 "app.infrastructure.ai.google_vision_service.GoogleVisionService.analyze_image"
@@ -360,9 +337,7 @@ class TestCompleteUserFlow:
     # Health Check Integration
     # ========================================================================
 
-    def test_health_checks_during_user_flow(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_health_checks_during_user_flow(self, client: TestClient, users_table: Any) -> None:
         """Test that health checks work during normal user flow."""
         # Check health before anything
         health_response = client.get("/api/v1/health")
@@ -392,9 +367,7 @@ class TestCompleteUserFlow:
 
         mock_result = ImageAnalysisResult(tags=[Tag(label="Green", confidence=0.91)])
 
-        with patch(
-            "app.infrastructure.ai.google_vision_service.GoogleVisionService.analyze_image"
-        ) as mock_analyze:
+        with patch("app.infrastructure.ai.google_vision_service.GoogleVisionService.analyze_image") as mock_analyze:
             mock_analyze.return_value = mock_result
 
             analyze_response = client.post(

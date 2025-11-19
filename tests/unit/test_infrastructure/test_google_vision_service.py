@@ -1,14 +1,12 @@
 """Tests for GoogleVisionService."""
 
 from io import BytesIO
-from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from google.api_core.exceptions import GoogleAPIError, ResourceExhausted, ServiceUnavailable
 from PIL import Image
 
-from app.core.config import Settings
 from app.core.exceptions import (
     AIServiceException,
     AIServiceRateLimitException,
@@ -235,9 +233,7 @@ class TestGoogleVisionService:
     # Health Check Tests
     # ========================================================================
 
-    def test_health_check_success(
-        self, service: GoogleVisionService, mock_vision_client: MagicMock
-    ) -> None:
+    def test_health_check_success(self, service: GoogleVisionService, mock_vision_client: MagicMock) -> None:
         """Test successful health check."""
         # Mock successful label detection
         mock_response = Mock()
@@ -248,9 +244,7 @@ class TestGoogleVisionService:
 
         assert service.health_check() is True
 
-    def test_health_check_failure(
-        self, service: GoogleVisionService, mock_vision_client: MagicMock
-    ) -> None:
+    def test_health_check_failure(self, service: GoogleVisionService, mock_vision_client: MagicMock) -> None:
         """Test health check failure."""
         mock_vision_client.label_detection.side_effect = GoogleAPIError("Service error")
 
@@ -264,9 +258,7 @@ class TestGoogleVisionService:
 
         assert service.health_check() is False
 
-    def test_health_check_uses_test_image(
-        self, service: GoogleVisionService, mock_vision_client: MagicMock
-    ) -> None:
+    def test_health_check_uses_test_image(self, service: GoogleVisionService, mock_vision_client: MagicMock) -> None:
         """Test that health check uses a test image."""
         mock_response = Mock()
         mock_response.label_annotations = [Mock(description="Test", score=0.9)]
@@ -326,9 +318,7 @@ class TestGoogleVisionService:
         assert result.tags[0].label == "Café"
         assert result.tags[1].label == "日本語"
 
-    def test_analyze_image_empty_bytes(
-        self, service: GoogleVisionService, mock_vision_client: MagicMock
-    ) -> None:
+    def test_analyze_image_empty_bytes(self, service: GoogleVisionService, mock_vision_client: MagicMock) -> None:
         """Test analysis with empty image bytes."""
         mock_vision_client.label_detection.side_effect = GoogleAPIError("Invalid image")
 

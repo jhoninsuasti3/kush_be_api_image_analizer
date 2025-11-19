@@ -1,6 +1,7 @@
 """Authentication endpoints for API v1."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
 
 from app.application.services.auth_service import AuthService
 from app.core.exceptions import InactiveUserException, InvalidCredentialsException, UserAlreadyExistsException
@@ -39,12 +40,13 @@ async def register(
         HTTPException 500: If registration fails.
     """
     try:
-        user = await auth_service.register(user_data)
+        user = await run_in_threadpool(auth_service.register, user_data)
 
         logger.info("user_registered_via_api", email=user.email)
 
         return UserResponse(
             email=user.email,
+            name=user.name,
             is_active=user.is_active,
             created_at=user.created_at,
         )
@@ -90,11 +92,11 @@ async def login(
         HTTPException 500: If login fails.
     """
     try:
-        token = await auth_service.login(credentials)
+        access_token = await run_in_threadpool(auth_service.login, credentials)
 
         logger.info("user_logged_in_via_api", email=credentials.email)
 
-        return token
+        return Token(access_token=access_token, token_type="bearer")  # nosec B106
 
     except InvalidCredentialsException as e:
         logger.warning("login_failed_invalid_credentials", email=credentials.email)
@@ -141,6 +143,7 @@ async def get_me(
 
     return UserResponse(
         email=current_user.email,
+        name=current_user.name,
         is_active=current_user.is_active,
         created_at=current_user.created_at,
     )
