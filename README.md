@@ -282,9 +282,49 @@ main (production)
         └── feature/your-feature-name
 ```
 
+## 🚀 Deployment a AWS Lambda
+
+El proyecto está configurado para deployment automático a AWS Lambda usando GitHub Actions.
+
+### Quick Deploy
+
+```bash
+# Crear tablas DynamoDB en AWS (solo primera vez)
+aws dynamodb create-table \
+  --table-name kush-users-dev \
+  --attribute-definitions AttributeName=email,AttributeType=S \
+  --key-schema AttributeName=email,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+
+# Deploy automático con push
+git push origin develop   # Deploy a dev
+git push origin staging   # Deploy a staging
+git push origin main      # Deploy a production
+
+# Deploy manual
+npm run deploy:dev
+# o
+make sls-deploy-dev
+```
+
+### Configuración Requerida
+
+1. **GitHub Secrets** (Settings → Secrets → Actions):
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `JWT_SECRET_KEY`
+
+2. **Ambientes en GitHub** (Settings → Environments):
+   - `dev` (branch: develop)
+   - `staging` (branch: staging, requires 1 reviewer)
+   - `prod` (branch: main, requires 2 reviewers)
+
+Ver guía completa: **[DEPLOYMENT_GUIDE.md](./documentation/DEPLOYMENT_GUIDE.md)**
+
 ## 📚 Documentación Adicional
 
 - **[DOCKER_QUICKSTART.md](./DOCKER_QUICKSTART.md)** - Guía completa de Docker (troubleshooting, desarrollo)
+- **[DEPLOYMENT_GUIDE.md](./documentation/DEPLOYMENT_GUIDE.md)** - Guía completa de deployment a AWS
 - **[GOOGLE_CLOUD_SETUP.md](./documentation/GOOGLE_CLOUD_SETUP.md)** - Configuración de Google Cloud Vision
 - **[TESTING_GUIDE.md](./documentation/TESTING_GUIDE.md)** - Guía completa de testing
 - **[SERVERLESS_ARCHITECTURE.md](./documentation/SERVERLESS_ARCHITECTURE.md)** - Arquitectura serverless (AWS Lambda)
