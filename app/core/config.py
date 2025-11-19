@@ -7,7 +7,7 @@ from environment variables with validation and type checking.
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,7 +42,15 @@ class Settings(BaseSettings):
     aws_secret_access_key: str = Field(default="", description="AWS secret access key")
 
     # DynamoDB
-    dynamodb_users_table: str = Field(default="kush-users-dev", description="DynamoDB users table name")
+    dynamodb_users_table: str = Field(
+        default="kush-users-dev",
+        description="DynamoDB users table name",
+        validation_alias=AliasChoices("dynamodb_users_table", "dynamodb_table_name"),
+    )
+    dynamodb_analysis_table: str = Field(
+        default="kush-image-analysis-dev",
+        description="DynamoDB image analysis table name",
+    )
     dynamodb_endpoint_url: str | None = Field(
         default=None, description="DynamoDB endpoint URL (for local development)"
     )

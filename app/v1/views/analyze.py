@@ -1,6 +1,7 @@
 """Image analysis endpoints for API v1."""
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 
 from app.application.services.image_analysis_service import ImageAnalysisService
 from app.core.exceptions import (
@@ -64,11 +65,12 @@ async def analyze_image(
         )
 
         # Analyze the image
-        result = await analysis_service.analyze_image(
-            file_content=file_content,
-            filename=file.filename or "unknown",
-            content_type=file.content_type or "application/octet-stream",
-            user_email=current_user.email,
+        result = await run_in_threadpool(
+            analysis_service.analyze_image,
+            file_content,
+            file.filename or "unknown",
+            file.content_type or "application/octet-stream",
+            current_user.email,
         )
 
         logger.info(

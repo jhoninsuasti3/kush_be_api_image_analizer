@@ -7,6 +7,7 @@ This module provides functions for:
 """
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -91,11 +92,11 @@ def decode_access_token(token: str) -> dict | None:
         return None
 
 
-def create_token_for_user(email: str) -> str:
+def create_token_for_user(user_or_email: str | Any) -> str:
     """Create an access token for a user.
 
     Args:
-        email: The user's email address.
+        user_or_email: The user's email address or an object with an `email` attribute.
 
     Returns:
         str: The encoded JWT token with the user's email as the subject.
@@ -103,6 +104,11 @@ def create_token_for_user(email: str) -> str:
     Example:
         >>> token = create_token_for_user("user@example.com")
     """
+    email: str | None = user_or_email if isinstance(user_or_email, str) else getattr(user_or_email, "email", None)
+
+    if not isinstance(email, str):
+        raise ValueError("A valid email address is required to create a token")
+
     return create_access_token(data={"sub": email})
 
 

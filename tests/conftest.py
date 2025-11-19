@@ -13,7 +13,7 @@ from moto import mock_aws
 
 from app.core.config import Settings
 from app.domain.models import User, UserCreate
-from app.infrastructure.persistence.dynamodb_client import get_dynamodb_resource, get_users_table
+from app.infrastructure.persistence.dynamodb_client import get_users_table
 from app.main import app
 
 # Initialize Faker
@@ -28,7 +28,6 @@ fake = Faker()
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment() -> Generator[None, None, None]:
     """Set up test environment variables."""
-    os.environ["ENVIRONMENT"] = "test"
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
     os.environ["AWS_SECURITY_TOKEN"] = "testing"
@@ -172,7 +171,7 @@ def valid_token(valid_user: User) -> str:
 @pytest.fixture
 def expired_token() -> str:
     """Create an expired JWT token for testing."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import timedelta
 
     from app.core.security import create_access_token
 

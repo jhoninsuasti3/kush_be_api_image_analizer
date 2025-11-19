@@ -1,5 +1,7 @@
 """Health check endpoints for API v1."""
 
+from datetime import datetime
+
 from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
 
@@ -18,6 +20,7 @@ class HealthResponse(BaseModel):
     status: str = Field(..., description="Health status", examples=["healthy"])
     service: str = Field(..., description="Service name")
     environment: str = Field(..., description="Environment")
+    timestamp: datetime = Field(..., description="Current timestamp")
 
 
 class ReadinessResponse(BaseModel):
@@ -25,6 +28,7 @@ class ReadinessResponse(BaseModel):
 
     status: str = Field(..., description="Readiness status", examples=["ready"])
     checks: dict[str, str] = Field(..., description="Individual service checks")
+    timestamp: datetime = Field(..., description="Current timestamp")
 
 
 @router.get(
@@ -46,6 +50,7 @@ async def health_check() -> HealthResponse:
         status="healthy",
         service=settings.app_name,
         environment=settings.environment,
+        timestamp=datetime.utcnow(),
     )
 
 
@@ -67,24 +72,25 @@ async def readiness_check() -> ReadinessResponse:
     """
     logger.debug("readiness_check_called")
 
-    checks = {}
+    checks: dict[str, str] = {}
 
     # Check DynamoDB
     try:
         table = get_users_table()
         table.load()
-        checks["dynamodb"] = "ready"
+        checks["database"] = "healthy"
         logger.debug("dynamodb_ready_check_passed")
     except Exception as e:
-        checks["dynamodb"] = f"not ready: {str(e)}"
+        checks["database"] = "unhealthy"
         logger.error("dynamodb_ready_check_failed", error=str(e))
 
     # Overall status
-    overall_status = "ready" if all(check == "ready" for check in checks.values()) else "not ready"
+    overall_status = "ready" if all(check == "healthy" for check in checks.values()) else "not ready"
 
     logger.info("readiness_check_completed", status=overall_status, checks=checks)
 
     return ReadinessResponse(
         status=overall_status,
         checks=checks,
+        timestamp=datetime.utcnow(),
     )

@@ -8,26 +8,22 @@ This Lambda handles all authentication operations:
 Optimized for cold start performance.
 """
 
+from fastapi import FastAPI
 from mangum import Mangum
 
+from app.config.exception_handlers import setup_exception_handlers
+from app.config.middlewares import setup_middlewares
+from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
+from app.v1.views.auth import router as auth_router
 
 # Configure logging before creating the app
 configure_logging()
 logger = get_logger(__name__)
 
 
-def create_auth_app():
-    """Create minimal FastAPI app for auth endpoints only.
-
-    Lazy loading to optimize cold start.
-    """
-    from fastapi import FastAPI
-
-    from app.config.exception_handlers import setup_exception_handlers
-    from app.config.middlewares import setup_middlewares
-    from app.core.config import settings
-    from app.v1.views.auth import router as auth_router
+def create_auth_app() -> FastAPI:
+    """Create minimal FastAPI app for auth endpoints only."""
 
     app = FastAPI(
         title=f"{settings.app_name} - Auth Service",

@@ -53,7 +53,7 @@ class GoogleVisionService(IAIService):
             logger.error("google_vision_client_init_failed", error=str(e))
             raise AIServiceException(f"Failed to initialize Google Vision client: {e}") from e
 
-    async def analyze_image(self, image_bytes: bytes) -> ImageAnalysisResult:
+    def analyze_image(self, image_bytes: bytes) -> ImageAnalysisResult:
         """Analyze an image using Google Cloud Vision API.
 
         Args:
@@ -134,7 +134,7 @@ class GoogleVisionService(IAIService):
             logger.error("image_analysis_failed", error=str(e))
             raise AIServiceException(f"Failed to analyze image: {e}") from e
 
-    async def health_check(self) -> bool:
+    def health_check(self) -> bool:
         """Check if Google Vision API is available and healthy.
 
         Returns:

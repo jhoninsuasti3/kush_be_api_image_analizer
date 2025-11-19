@@ -1,12 +1,10 @@
 """Tests for FileValidator."""
 
 from io import BytesIO
-from typing import Any
 
 import pytest
 from PIL import Image
 
-from app.core.config import Settings
 from app.core.exceptions import (
     FileTooLargeException,
     InvalidFileTypeException,
@@ -196,44 +194,32 @@ class TestFileValidator:
     # Full Validation Tests
     # ========================================================================
 
-    def test_validate_file_success_jpeg(
-        self, validator: FileValidator, valid_jpeg_bytes: bytes
-    ) -> None:
+    def test_validate_file_success_jpeg(self, validator: FileValidator, valid_jpeg_bytes: bytes) -> None:
         """Test complete validation of valid JPEG file."""
         # Should not raise exception
         validator.validate_file(valid_jpeg_bytes, "test.jpg", "image/jpeg")
 
-    def test_validate_file_success_png(
-        self, validator: FileValidator, valid_png_bytes: bytes
-    ) -> None:
+    def test_validate_file_success_png(self, validator: FileValidator, valid_png_bytes: bytes) -> None:
         """Test complete validation of valid PNG file."""
         validator.validate_file(valid_png_bytes, "test.png", "image/png")
 
-    def test_validate_file_success_webp(
-        self, validator: FileValidator, valid_webp_bytes: bytes
-    ) -> None:
+    def test_validate_file_success_webp(self, validator: FileValidator, valid_webp_bytes: bytes) -> None:
         """Test complete validation of valid WebP file."""
         validator.validate_file(valid_webp_bytes, "test.webp", "image/webp")
 
-    def test_validate_file_size_exceeds(
-        self, validator: FileValidator
-    ) -> None:
+    def test_validate_file_size_exceeds(self, validator: FileValidator) -> None:
         """Test validation fails when file is too large."""
         large_file = b"x" * (6 * 1024 * 1024)  # 6MB
 
         with pytest.raises(FileTooLargeException):
             validator.validate_file(large_file, "large.jpg", "image/jpeg")
 
-    def test_validate_file_wrong_extension(
-        self, validator: FileValidator, valid_jpeg_bytes: bytes
-    ) -> None:
+    def test_validate_file_wrong_extension(self, validator: FileValidator, valid_jpeg_bytes: bytes) -> None:
         """Test validation fails with wrong extension."""
         with pytest.raises(InvalidFileTypeException):
             validator.validate_file(valid_jpeg_bytes, "test.gif", "image/jpeg")
 
-    def test_validate_file_wrong_content_type(
-        self, validator: FileValidator, valid_jpeg_bytes: bytes
-    ) -> None:
+    def test_validate_file_wrong_content_type(self, validator: FileValidator, valid_jpeg_bytes: bytes) -> None:
         """Test validation fails with wrong content type."""
         with pytest.raises(InvalidFileTypeException):
             validator.validate_file(valid_jpeg_bytes, "test.jpg", "text/plain")
@@ -247,9 +233,7 @@ class TestFileValidator:
         # But actual image format validation will determine if it's really valid
         validator.validate_file(valid_jpeg_bytes, "test.png", "image/jpeg")
 
-    def test_validate_file_corrupted_with_valid_metadata(
-        self, validator: FileValidator
-    ) -> None:
+    def test_validate_file_corrupted_with_valid_metadata(self, validator: FileValidator) -> None:
         """Test validation fails when file is corrupted despite valid metadata."""
         corrupted_data = b"Not a real image"
 
@@ -281,9 +265,7 @@ class TestFileValidator:
         if len(large_bytes) < 5 * 1024 * 1024:
             validator.validate_file(large_bytes, "large.jpg", "image/jpeg")
 
-    def test_validate_file_with_unicode_filename(
-        self, validator: FileValidator, valid_jpeg_bytes: bytes
-    ) -> None:
+    def test_validate_file_with_unicode_filename(self, validator: FileValidator, valid_jpeg_bytes: bytes) -> None:
         """Test validation with Unicode characters in filename."""
         validator.validate_file(valid_jpeg_bytes, "фото.jpg", "image/jpeg")
         validator.validate_file(valid_jpeg_bytes, "画像.jpg", "image/jpeg")

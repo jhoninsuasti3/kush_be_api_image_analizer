@@ -133,6 +133,19 @@ make format           # Formatear código automáticamente
 make check            # Ejecutar lint + tests + coverage
 ```
 
+#### Hooks de pre-commit
+
+1. Instalar los hooks (solo una vez):
+   ```bash
+   poetry run pre-commit install
+   ```
+2. Ejecutarlos manualmente en todo el repo (opcional):
+   ```bash
+   poetry run pre-commit run --all-files
+   ```
+
+Los hooks ejecutan automáticamente `ruff` (lint + format) y `mypy` antes de cada commit, evitando subir código que no pase las validaciones básicas.
+
 ### Utilidades
 ```bash
 make help             # Ver todos los comandos disponibles

@@ -6,26 +6,22 @@ This Lambda handles image analysis operations:
 Optimized for image processing with higher memory allocation.
 """
 
+from fastapi import FastAPI
 from mangum import Mangum
 
+from app.config.exception_handlers import setup_exception_handlers
+from app.config.middlewares import setup_middlewares
+from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
+from app.v1.views.analyze import router as analyze_router
 
 # Configure logging before creating the app
 configure_logging()
 logger = get_logger(__name__)
 
 
-def create_analyze_app():
-    """Create minimal FastAPI app for analyze endpoints only.
-
-    Lazy loading to optimize cold start.
-    """
-    from fastapi import FastAPI
-
-    from app.config.exception_handlers import setup_exception_handlers
-    from app.config.middlewares import setup_middlewares
-    from app.core.config import settings
-    from app.v1.views.analyze import router as analyze_router
+def create_analyze_app() -> FastAPI:
+    """Create minimal FastAPI app for analyze endpoints only."""
 
     app = FastAPI(
         title=f"{settings.app_name} - Analysis Service",
@@ -51,7 +47,7 @@ def create_analyze_app():
         from app.v1.dependencies.services import get_ai_service
 
         ai_service = get_ai_service()
-        ai_healthy = await ai_service.health_check()
+        ai_healthy = ai_service.health_check()
 
         return {
             "service": "analysis",

@@ -3,7 +3,6 @@
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -43,9 +42,7 @@ class TestHealthEndpoints:
         assert "checks" in data
         assert data["checks"]["database"] == "healthy"
 
-    def test_readiness_check_database_connection(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_readiness_check_database_connection(self, client: TestClient, users_table: Any) -> None:
         """Test that readiness check verifies database connection."""
         response = client.get("/api/v1/ready")
 
@@ -54,9 +51,7 @@ class TestHealthEndpoints:
         assert "database" in data["checks"]
         assert data["checks"]["database"] == "healthy"
 
-    def test_readiness_check_no_authentication_required(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_readiness_check_no_authentication_required(self, client: TestClient, users_table: Any) -> None:
         """Test that readiness check doesn't require authentication."""
         response = client.get("/api/v1/ready")
 
@@ -95,9 +90,7 @@ class TestHealthEndpoints:
         assert "status" in data
         assert isinstance(data["status"], str)
 
-    def test_readiness_check_response_format(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_readiness_check_response_format(self, client: TestClient, users_table: Any) -> None:
         """Test readiness check response format."""
         response = client.get("/api/v1/ready")
 
@@ -121,9 +114,7 @@ class TestHealthEndpoints:
             assert response.status_code == 200
             assert response.json()["status"] == "healthy"
 
-    def test_readiness_check_multiple_requests(
-        self, client: TestClient, users_table: Any
-    ) -> None:
+    def test_readiness_check_multiple_requests(self, client: TestClient, users_table: Any) -> None:
         """Test that readiness check can handle multiple requests."""
         for _ in range(5):
             response = client.get("/api/v1/ready")

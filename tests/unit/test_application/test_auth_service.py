@@ -1,7 +1,6 @@
 """Tests for AuthService."""
 
-from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -129,9 +128,7 @@ class TestAuthService:
     # Login Tests
     # ========================================================================
 
-    def test_login_success(
-        self, auth_service: AuthService, existing_user: User, mock_user_repository: Mock
-    ) -> None:
+    def test_login_success(self, auth_service: AuthService, existing_user: User, mock_user_repository: Mock) -> None:
         """Test successful login."""
         credentials = UserLogin(email=existing_user.email, password="password123")
 
@@ -149,9 +146,7 @@ class TestAuthService:
         mock_user_repository.get_by_email.assert_called_once_with(credentials.email)
         mock_verify.assert_called_once_with(credentials.password, existing_user.hashed_password)
 
-    def test_login_user_not_found(
-        self, auth_service: AuthService, mock_user_repository: Mock
-    ) -> None:
+    def test_login_user_not_found(self, auth_service: AuthService, mock_user_repository: Mock) -> None:
         """Test login fails when user doesn't exist."""
         credentials = UserLogin(email="nonexistent@example.com", password="password123")
 
@@ -178,9 +173,7 @@ class TestAuthService:
 
             assert "invalid" in str(exc_info.value).lower()
 
-    def test_login_inactive_user(
-        self, auth_service: AuthService, mock_user_repository: Mock
-    ) -> None:
+    def test_login_inactive_user(self, auth_service: AuthService, mock_user_repository: Mock) -> None:
         """Test login fails when user is inactive."""
         inactive_user = User(
             email="inactive@example.com",
@@ -207,15 +200,17 @@ class TestAuthService:
 
         mock_user_repository.get_by_email.return_value = existing_user
 
-        with patch("app.application.services.auth_service.verify_password") as mock_verify:
-            with patch("app.application.services.auth_service.create_token_for_user") as mock_create_token:
-                mock_verify.return_value = True
-                mock_create_token.return_value = "valid.jwt.token"
+        with (
+            patch("app.application.services.auth_service.verify_password") as mock_verify,
+            patch("app.application.services.auth_service.create_token_for_user") as mock_create_token,
+        ):
+            mock_verify.return_value = True
+            mock_create_token.return_value = "valid.jwt.token"
 
-                token = auth_service.login(credentials)
+            token = auth_service.login(credentials)
 
-                assert token == "valid.jwt.token"
-                mock_create_token.assert_called_once_with(existing_user)
+            assert token == "valid.jwt.token"
+            mock_create_token.assert_called_once_with(existing_user)
 
     # ========================================================================
     # Get Current User Tests
@@ -233,18 +228,14 @@ class TestAuthService:
         assert user.is_active is True
         mock_user_repository.get_by_email.assert_called_once_with(existing_user.email)
 
-    def test_get_current_user_not_found(
-        self, auth_service: AuthService, mock_user_repository: Mock
-    ) -> None:
+    def test_get_current_user_not_found(self, auth_service: AuthService, mock_user_repository: Mock) -> None:
         """Test get current user fails when user not found."""
         mock_user_repository.get_by_email.side_effect = UserNotFoundException("User not found")
 
         with pytest.raises(UserNotFoundException):
             auth_service.get_current_user("nonexistent@example.com")
 
-    def test_get_current_user_inactive(
-        self, auth_service: AuthService, mock_user_repository: Mock
-    ) -> None:
+    def test_get_current_user_inactive(self, auth_service: AuthService, mock_user_repository: Mock) -> None:
         """Test get current user fails when user is inactive."""
         inactive_user = User(
             email="inactive@example.com",
@@ -262,9 +253,7 @@ class TestAuthService:
     # Edge Cases
     # ========================================================================
 
-    def test_register_with_email_case_variations(
-        self, auth_service: AuthService, mock_user_repository: Mock
-    ) -> None:
+    def test_register_with_email_case_variations(self, auth_service: AuthService, mock_user_repository: Mock) -> None:
         """Test registration with different email cases."""
         user_data = UserCreate(email="Test@Example.COM", password="StrongPassword123!")
 
@@ -319,18 +308,20 @@ class TestAuthService:
 
         mock_user_repository.get_by_email.side_effect = get_user_by_email
 
-        with patch("app.application.services.auth_service.verify_password") as mock_verify:
-            with patch("app.application.services.auth_service.create_token_for_user") as mock_create_token:
-                mock_verify.return_value = True
-                mock_create_token.return_value = "token"
+        with (
+            patch("app.application.services.auth_service.verify_password") as mock_verify,
+            patch("app.application.services.auth_service.create_token_for_user") as mock_create_token,
+        ):
+            mock_verify.return_value = True
+            mock_create_token.return_value = "token"
 
-                # Login as user1
-                token1 = auth_service.login(UserLogin(email=user1.email, password="pass1"))
-                assert token1 == "token"
+            # Login as user1
+            token1 = auth_service.login(UserLogin(email=user1.email, password="pass1"))
+            assert token1 == "token"
 
-                # Login as user2
-                token2 = auth_service.login(UserLogin(email=user2.email, password="pass2"))
-                assert token2 == "token"
+            # Login as user2
+            token2 = auth_service.login(UserLogin(email=user2.email, password="pass2"))
+            assert token2 == "token"
 
-                # Verify both users were retrieved
-                assert mock_user_repository.get_by_email.call_count == 2
+            # Verify both users were retrieved
+            assert mock_user_repository.get_by_email.call_count == 2

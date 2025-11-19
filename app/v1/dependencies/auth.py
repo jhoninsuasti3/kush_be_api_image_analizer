@@ -4,6 +4,7 @@ Provides dependency injection for authentication and authorization.
 """
 
 from fastapi import Depends, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
@@ -72,7 +73,7 @@ async def get_current_user(
 
     # Get user from database
     try:
-        user = await auth_service.get_current_user(email)
+        user = await run_in_threadpool(auth_service.get_current_user, email)
         return user
     except Exception as e:
         logger.error("get_current_user_failed", email=email, error=str(e))

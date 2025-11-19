@@ -5,6 +5,7 @@ using AWS DynamoDB as the persistence layer.
 """
 
 from datetime import datetime
+from typing import Any
 
 from app.core.exceptions import DatabaseException, UserAlreadyExistsException, UserNotFoundException
 from app.core.logging import get_logger
@@ -22,11 +23,11 @@ class DynamoDBUserRepository(IUserRepository):
     persistence layer.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, table: Any | None = None) -> None:
         """Initialize the repository with a DynamoDB table."""
-        self.table = get_users_table()
+        self.table = table or get_users_table()
 
-    async def create(self, user: User) -> User:
+    def create(self, user: User) -> User:
         """Create a new user in DynamoDB.
 
         Args:
@@ -41,13 +42,14 @@ class DynamoDBUserRepository(IUserRepository):
         """
         try:
             # Check if user already exists
-            if await self.exists(user.email):
+            if self.exists(user.email):
                 logger.warning("user_already_exists", email=user.email)
                 raise UserAlreadyExistsException(f"User with email {user.email} already exists")
 
             # Prepare item for DynamoDB
             item = {
                 "email": user.email,
+                "name": user.name,
                 "hashed_password": user.hashed_password,
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat(),
@@ -65,7 +67,7 @@ class DynamoDBUserRepository(IUserRepository):
             logger.error("user_create_failed", email=user.email, error=str(e))
             raise DatabaseException(f"Failed to create user: {e}") from e
 
-    async def get_by_email(self, email: str) -> User | None:
+    def get_by_email(self, email: str) -> User | None:
         """Get a user by email from DynamoDB.
 
         Args:
@@ -89,6 +91,7 @@ class DynamoDBUserRepository(IUserRepository):
             # Convert DynamoDB item to User model
             user = User(
                 email=item["email"],
+                name=item.get("name", "Unknown"),  # Retrocompatibilidad para usuarios antiguos
                 hashed_password=item["hashed_password"],
                 is_active=item.get("is_active", True),
                 created_at=datetime.fromisoformat(item["created_at"]),
@@ -101,7 +104,7 @@ class DynamoDBUserRepository(IUserRepository):
             logger.error("user_get_failed", email=email, error=str(e))
             raise DatabaseException(f"Failed to get user: {e}") from e
 
-    async def update(self, user: User) -> User:
+    def update(self, user: User) -> User:
         """Update an existing user in DynamoDB.
 
         Args:
@@ -116,7 +119,7 @@ class DynamoDBUserRepository(IUserRepository):
         """
         try:
             # Check if user exists
-            existing_user = await self.get_by_email(user.email)
+            existing_user = self.get_by_email(user.email)
             if not existing_user:
                 logger.warning("user_not_found_for_update", email=user.email)
                 raise UserNotFoundException(f"User with email {user.email} not found")
@@ -140,7 +143,7 @@ class DynamoDBUserRepository(IUserRepository):
             logger.error("user_update_failed", email=user.email, error=str(e))
             raise DatabaseException(f"Failed to update user: {e}") from e
 
-    async def delete(self, email: str) -> bool:
+    def delete(self, email: str) -> bool:
         """Delete a user by email from DynamoDB.
 
         Args:
@@ -154,7 +157,7 @@ class DynamoDBUserRepository(IUserRepository):
         """
         try:
             # Check if user exists before deleting
-            if not await self.exists(email):
+            if not self.exists(email):
                 logger.debug("user_not_found_for_delete", email=email)
                 return False
 
@@ -168,7 +171,7 @@ class DynamoDBUserRepository(IUserRepository):
             logger.error("user_delete_failed", email=email, error=str(e))
             raise DatabaseException(f"Failed to delete user: {e}") from e
 
-    async def exists(self, email: str) -> bool:
+    def exists(self, email: str) -> bool:
         """Check if a user exists by email.
 
         Args:
@@ -181,7 +184,7 @@ class DynamoDBUserRepository(IUserRepository):
             DatabaseException: If database operation fails.
         """
         try:
-            user = await self.get_by_email(email)
+            user = self.get_by_email(email)
             return user is not None
 
         except DatabaseException:

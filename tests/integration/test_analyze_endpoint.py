@@ -111,18 +111,14 @@ class TestAnalyzeEndpoint:
     # Authentication Tests
     # ========================================================================
 
-    def test_analyze_image_no_authentication(
-        self, client: TestClient, valid_image_file: dict[str, Any]
-    ) -> None:
+    def test_analyze_image_no_authentication(self, client: TestClient, valid_image_file: dict[str, Any]) -> None:
         """Test analysis without authentication token."""
         response = client.post("/api/v1/analyze", files=valid_image_file)
 
         assert response.status_code == 401
         assert "not authenticated" in response.json()["detail"].lower()
 
-    def test_analyze_image_invalid_token(
-        self, client: TestClient, valid_image_file: dict[str, Any]
-    ) -> None:
+    def test_analyze_image_invalid_token(self, client: TestClient, valid_image_file: dict[str, Any]) -> None:
         """Test analysis with invalid token."""
         response = client.post(
             "/api/v1/analyze",
@@ -148,9 +144,7 @@ class TestAnalyzeEndpoint:
     # File Validation Tests
     # ========================================================================
 
-    def test_analyze_image_file_too_large(
-        self, authenticated_client: tuple[TestClient, str]
-    ) -> None:
+    def test_analyze_image_file_too_large(self, authenticated_client: tuple[TestClient, str]) -> None:
         """Test analysis with file exceeding size limit."""
         client, token = authenticated_client
 
@@ -171,9 +165,7 @@ class TestAnalyzeEndpoint:
         assert response.status_code == 400
         assert "5 MB" in response.json()["detail"] or "too large" in response.json()["detail"].lower()
 
-    def test_analyze_image_invalid_file_type(
-        self, authenticated_client: tuple[TestClient, str]
-    ) -> None:
+    def test_analyze_image_invalid_file_type(self, authenticated_client: tuple[TestClient, str]) -> None:
         """Test analysis with invalid file type."""
         client, token = authenticated_client
 
@@ -190,9 +182,7 @@ class TestAnalyzeEndpoint:
         assert response.status_code == 400
         assert "invalid" in response.json()["detail"].lower() or "file type" in response.json()["detail"].lower()
 
-    def test_analyze_image_corrupted_file(
-        self, authenticated_client: tuple[TestClient, str]
-    ) -> None:
+    def test_analyze_image_corrupted_file(self, authenticated_client: tuple[TestClient, str]) -> None:
         """Test analysis with corrupted image file."""
         client, token = authenticated_client
 
@@ -209,9 +199,7 @@ class TestAnalyzeEndpoint:
         assert response.status_code == 400
         assert "invalid" in response.json()["detail"].lower() or "format" in response.json()["detail"].lower()
 
-    def test_analyze_image_no_file_provided(
-        self, authenticated_client: tuple[TestClient, str]
-    ) -> None:
+    def test_analyze_image_no_file_provided(self, authenticated_client: tuple[TestClient, str]) -> None:
         """Test analysis without providing file."""
         client, token = authenticated_client
 
