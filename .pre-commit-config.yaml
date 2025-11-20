@@ -1,0 +1,100 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+
+# To install: poetry run pre-commit install
+# To run manually: poetry run pre-commit run --all-files
+
+repos:
+  # Ruff - Ultra-fast Python linter and formatter (replaces black, isort, flake8)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      # Run the formatter
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # MyPy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-python-jose
+          - types-passlib
+          - pydantic
+        args: [--config-file=pyproject.toml]
+        exclude: ^(tests/|scripts/)
+
+  # General pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Prevent committing large files
+      - id: check-added-large-files
+        args: [--maxkb=5000]
+
+      # Check for files that would conflict in case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Check for merge conflicts
+      - id: check-merge-conflict
+
+      # Check YAML syntax
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags in YAML
+
+      # Check TOML syntax
+      - id: check-toml
+
+      # Check JSON syntax
+      - id: check-json
+
+      # Ensure files end with a newline
+      - id: end-of-file-fixer
+        exclude: ^(\.env\.example|\.env)$
+
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        exclude: ^(\.env\.example|\.env)$
+
+      # Prevent committing private keys
+      - id: detect-private-key
+
+      # Check for AWS credentials
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+
+  # Security checks - Bandit
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
+
+# Global configuration
+default_language_version:
+  python: python3.13
+
+# Fail fast - stop after first failure
+fail_fast: false
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+      \.venv/|
+      venv/|
+      local/|
+      \.git/|
+      \.mypy_cache/|
+      \.pytest_cache/|
+      \.ruff_cache/|
+      __pycache__/|
+      \.env|
+      insights_backend/
+  )$

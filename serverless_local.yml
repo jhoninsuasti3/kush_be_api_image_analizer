@@ -1,0 +1,80 @@
+service: kush-image-analyzer-local
+
+frameworkVersion: '3'
+
+# ============================================================================
+# Local Development Configuration
+# ============================================================================
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  stage: local
+  versionFunctions: false
+
+  environment:
+    ENVIRONMENT: development
+    LOG_LEVEL: DEBUG
+    DYNAMODB_TABLE_NAME: kush-users-local
+    DYNAMODB_ENDPOINT: http://localhost:8000  # DynamoDB Local
+    AWS_REGION: us-east-1
+    JWT_SECRET_KEY: local-dev-secret-key-for-testing-only-32chars
+
+  layers:
+    - { Ref: PythonRequirementsLambdaLayer }
+
+# ============================================================================
+# Custom Variables
+# ============================================================================
+custom:
+  pythonRequirements:
+    slim: true
+    layer: true
+    dockerizePip: non-linux
+
+  serverless-offline:
+    httpPort: 8000
+    lambdaPort: 3002
+    host: 0.0.0.0
+    noPrependStageInUrl: true
+    noAuth: true
+
+  serverless-dynamodb:
+    stages:
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+      seed: true
+
+# ============================================================================
+# Plugins
+# ============================================================================
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+  - serverless-dynamodb-local
+
+# ============================================================================
+# Package Configuration
+# ============================================================================
+package:
+  individually: true
+  exclude:
+    - .git/**
+    - .github/**
+    - .vscode/**
+    - .venv/**
+    - tests/**
+    - documentation/**
+    - node_modules/**
+    - '*.md'
+
+# ============================================================================
+# Functions
+# ============================================================================
+functions:
+  - ${file(handlers/auth/serverless.yml)}
+  - ${file(handlers/analyze/serverless.yml)}
+  - ${file(handlers/health/serverless.yml)}

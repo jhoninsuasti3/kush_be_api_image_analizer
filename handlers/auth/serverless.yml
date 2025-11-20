@@ -1,0 +1,50 @@
+# Auth Lambda Configuration
+# Handles authentication endpoints
+
+authRegister:
+  handler: handlers/auth/handler.lambda_handler
+  memorySize: 512
+  timeout: 30
+  environment:
+    SERVICE_NAME: auth
+  events:
+    - http:
+        path: api/v1/auth/register
+        method: post
+        cors: true
+
+authLogin:
+  handler: handlers/auth/handler.lambda_handler
+  memorySize: 512
+  timeout: 30
+  environment:
+    SERVICE_NAME: auth
+  events:
+    - http:
+        path: api/v1/auth/login
+        method: post
+        cors: true
+
+authMe:
+  handler: handlers/auth/handler.lambda_handler
+  memorySize: 512
+  timeout: 30
+  environment:
+    SERVICE_NAME: auth
+  events:
+    - http:
+        path: api/v1/auth/me
+        method: get
+        cors: true
+
+authHealth:
+  handler: handlers/auth/handler.lambda_handler
+  memorySize: 256
+  timeout: 10
+  environment:
+    SERVICE_NAME: auth
+  events:
+    - http:
+        path: health
+        method: get
+        cors: true

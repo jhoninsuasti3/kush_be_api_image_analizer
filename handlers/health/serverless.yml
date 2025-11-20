@@ -1,0 +1,26 @@
+# Health Lambda Configuration
+# Handles health check and readiness endpoints
+
+healthCheck:
+  handler: handlers/health/handler.lambda_handler
+  memorySize: 256  # Minimal memory
+  timeout: 10      # Quick response
+  environment:
+    SERVICE_NAME: health
+  events:
+    - http:
+        path: api/v1/health
+        method: get
+        cors: true
+
+readinessCheck:
+  handler: handlers/health/handler.lambda_handler
+  memorySize: 256
+  timeout: 15
+  environment:
+    SERVICE_NAME: health
+  events:
+    - http:
+        path: api/v1/ready
+        method: get
+        cors: true
