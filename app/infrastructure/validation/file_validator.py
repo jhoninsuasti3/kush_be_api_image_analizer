@@ -156,15 +156,26 @@ class FileValidator(IFileValidator):
             filename: The filename for logging.
 
         Raises:
-            InvalidFileTypeException: If the content type is not an image.
+            InvalidFileTypeException: If the content type is not an allowed image type.
         """
-        if not content_type.lower().startswith("image/"):
+        # Allowed MIME types based on allowed extensions
+        allowed_mime_types = {
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/webp",
+        }
+
+        if content_type.lower() not in allowed_mime_types:
             logger.warning(
                 "invalid_content_type",
                 filename=filename or "uploaded_file",
                 content_type=content_type,
             )
-            raise InvalidFileTypeException(f"Content type '{content_type}' is not an image type")
+            raise InvalidFileTypeException(
+                f"Content type '{content_type}' is not allowed. "
+                f"Allowed types: {', '.join(sorted(allowed_mime_types))}"
+            )
 
     def _validate_image_format(self, file_content: bytes, filename: str | None = None) -> None:
         """Validate that the file is a valid image using Pillow.

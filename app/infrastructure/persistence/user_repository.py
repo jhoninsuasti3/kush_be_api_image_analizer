@@ -67,16 +67,17 @@ class DynamoDBUserRepository(IUserRepository):
             logger.error("user_create_failed", email=user.email, error=str(e))
             raise DatabaseException(f"Failed to create user: {e}") from e
 
-    def get_by_email(self, email: str) -> User | None:
+    def get_by_email(self, email: str) -> User:
         """Get a user by email from DynamoDB.
 
         Args:
             email: The user's email address.
 
         Returns:
-            User | None: The user if found, None otherwise.
+            User: The user if found.
 
         Raises:
+            UserNotFoundException: If the user is not found.
             DatabaseException: If database operation fails.
         """
         try:
@@ -84,7 +85,7 @@ class DynamoDBUserRepository(IUserRepository):
 
             if "Item" not in response:
                 logger.debug("user_not_found", email=email)
-                return None
+                raise UserNotFoundException(f"User with email {email} not found")
 
             item = response["Item"]
 
@@ -100,6 +101,8 @@ class DynamoDBUserRepository(IUserRepository):
             logger.debug("user_retrieved", email=email)
             return user
 
+        except UserNotFoundException:
+            raise
         except Exception as e:
             logger.error("user_get_failed", email=email, error=str(e))
             raise DatabaseException(f"Failed to get user: {e}") from e
@@ -150,16 +153,17 @@ class DynamoDBUserRepository(IUserRepository):
             email: The user's email address.
 
         Returns:
-            bool: True if the user was deleted, False if not found.
+            bool: True if the user was deleted.
 
         Raises:
+            UserNotFoundException: If the user is not found.
             DatabaseException: If database operation fails.
         """
         try:
             # Check if user exists before deleting
             if not self.exists(email):
                 logger.debug("user_not_found_for_delete", email=email)
-                return False
+                raise UserNotFoundException(f"User with email {email} not found")
 
             # Delete item from DynamoDB
             self.table.delete_item(Key={"email": email})
@@ -167,6 +171,8 @@ class DynamoDBUserRepository(IUserRepository):
             logger.info("user_deleted", email=email)
             return True
 
+        except UserNotFoundException:
+            raise
         except Exception as e:
             logger.error("user_delete_failed", email=email, error=str(e))
             raise DatabaseException(f"Failed to delete user: {e}") from e
@@ -184,9 +190,11 @@ class DynamoDBUserRepository(IUserRepository):
             DatabaseException: If database operation fails.
         """
         try:
-            user = self.get_by_email(email)
-            return user is not None
+            self.get_by_email(email)
+            return True
 
+        except UserNotFoundException:
+            return False
         except DatabaseException:
             raise
         except Exception as e:

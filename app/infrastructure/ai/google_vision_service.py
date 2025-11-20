@@ -95,7 +95,7 @@ class GoogleVisionService(IAIService):
                 logger.warning("no_labels_detected")
                 raise NoLabelsDetectedException("No labels detected in the image")
 
-            # Convert Google Vision labels to our Tag model
+            # Convert Google Vision labels to our Tag model and sort by confidence (descending)
             tags = [
                 Tag(
                     label=label.description,
@@ -103,6 +103,9 @@ class GoogleVisionService(IAIService):
                 )
                 for label in labels
             ]
+
+            # Sort tags by confidence in descending order
+            tags.sort(key=lambda tag: tag.confidence, reverse=True)
 
             logger.info(
                 "image_analyzed_successfully",

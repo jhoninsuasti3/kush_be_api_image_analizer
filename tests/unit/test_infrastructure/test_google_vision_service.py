@@ -342,4 +342,4 @@ class TestGoogleVisionService:
 
         assert len(result.tags) == 50
         # Verify first and last labels
-        assert result.tags[0].description in [label.description for label in mock_labels]
+        assert result.tags[0].label in [label.description for label in mock_labels]

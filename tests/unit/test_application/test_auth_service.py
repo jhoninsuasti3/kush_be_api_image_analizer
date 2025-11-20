@@ -31,13 +31,14 @@ class TestAuthService:
     @pytest.fixture
     def user_create_data(self) -> UserCreate:
         """Create user registration data."""
-        return UserCreate(email="test@example.com", password="StrongPassword123!")
+        return UserCreate(email="test@example.com", name="Test User", password="StrongPassword123!")
 
     @pytest.fixture
     def existing_user(self) -> User:
         """Create an existing user."""
         return User(
             email="existing@example.com",
+            name="Existing User",
             hashed_password="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyAJ3xIqP4iq",  # "password123"
             is_active=True,
         )
@@ -54,6 +55,7 @@ class TestAuthService:
         mock_user_repository.exists.return_value = False
         mock_user_repository.create.return_value = User(
             email=user_create_data.email,
+            name=user_create_data.name,
             hashed_password="hashed_password",
             is_active=True,
         )
@@ -92,6 +94,7 @@ class TestAuthService:
             mock_hash.return_value = "hashed_password_xyz"
             mock_user_repository.create.return_value = User(
                 email=user_create_data.email,
+                name=user_create_data.name,
                 hashed_password="hashed_password_xyz",
                 is_active=True,
             )
@@ -116,6 +119,7 @@ class TestAuthService:
             mock_hash.return_value = "hashed"
             mock_user_repository.create.return_value = User(
                 email=user_create_data.email,
+                name=user_create_data.name,
                 hashed_password="hashed",
                 is_active=True,
             )
@@ -177,6 +181,7 @@ class TestAuthService:
         """Test login fails when user is inactive."""
         inactive_user = User(
             email="inactive@example.com",
+            name="Inactive User",
             hashed_password="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyAJ3xIqP4iq",
             is_active=False,
         )
@@ -239,6 +244,7 @@ class TestAuthService:
         """Test get current user fails when user is inactive."""
         inactive_user = User(
             email="inactive@example.com",
+            name="Inactive User",
             hashed_password="hashed",
             is_active=False,
         )
@@ -255,7 +261,7 @@ class TestAuthService:
 
     def test_register_with_email_case_variations(self, auth_service: AuthService, mock_user_repository: Mock) -> None:
         """Test registration with different email cases."""
-        user_data = UserCreate(email="Test@Example.COM", password="StrongPassword123!")
+        user_data = UserCreate(email="Test@Example.COM", name="Test User", password="StrongPassword123!")
 
         mock_user_repository.exists.return_value = False
 
@@ -263,6 +269,7 @@ class TestAuthService:
             mock_hash.return_value = "hashed"
             mock_user_repository.create.return_value = User(
                 email=user_data.email,
+                name=user_data.name,
                 hashed_password="hashed",
                 is_active=True,
             )
@@ -278,6 +285,7 @@ class TestAuthService:
         """Test that password is verified before checking if user is active."""
         inactive_user = User(
             email="inactive@example.com",
+            name="Inactive User",
             hashed_password="hashed",
             is_active=False,
         )
@@ -296,8 +304,8 @@ class TestAuthService:
         self, auth_service: AuthService, mock_user_repository: Mock
     ) -> None:
         """Test multiple login attempts for different users."""
-        user1 = User(email="user1@example.com", hashed_password="hash1", is_active=True)
-        user2 = User(email="user2@example.com", hashed_password="hash2", is_active=True)
+        user1 = User(email="user1@example.com", name="User One", hashed_password="hash1", is_active=True)
+        user2 = User(email="user2@example.com", name="User Two", hashed_password="hash2", is_active=True)
 
         def get_user_by_email(email: str) -> User:
             if email == user1.email:

@@ -1,7 +1,7 @@
 """Integration tests for health check endpoints."""
 
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -59,20 +59,19 @@ class TestHealthEndpoints:
 
     def test_readiness_check_database_failure(self, client: TestClient) -> None:
         """Test readiness check when database is unavailable."""
-        with patch("app.infrastructure.persistence.dynamodb_client.get_users_table") as mock_get_table:
-            mock_get_table.side_effect = Exception("Database connection failed")
+        with patch("app.v1.views.health.get_users_table") as mock_get_table:
+            # Mock the table to raise an exception when load() is called
+            mock_table = MagicMock()
+            mock_table.load.side_effect = Exception("Database connection failed")
+            mock_get_table.return_value = mock_table
 
             response = client.get("/api/v1/ready")
 
-            # Should still return 503 or indicate unhealthy state
-            # depending on implementation
-            assert response.status_code in [200, 503]
-            if response.status_code == 200:
-                data = response.json()
-                assert data["checks"]["database"] == "unhealthy"
-            else:
-                data = response.json()
-                assert data["status"] == "not ready"
+            # Should still return 200 but with unhealthy status
+            assert response.status_code == 200
+            data = response.json()
+            assert data["checks"]["database"] == "unhealthy"
+            assert data["status"] == "not ready"
 
     # ========================================================================
     # Response Format Tests

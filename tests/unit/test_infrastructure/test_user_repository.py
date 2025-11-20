@@ -20,7 +20,7 @@ class TestDynamoDBUserRepository:
     @pytest.fixture
     def sample_user(self) -> User:
         """Create a sample user for testing."""
-        return User(email="test@example.com", hashed_password="hashed_password_123", is_active=True)
+        return User(email="test@example.com", name="Test User", hashed_password="hashed_password_123", is_active=True)
 
     # ========================================================================
     # Create Tests
@@ -47,7 +47,9 @@ class TestDynamoDBUserRepository:
 
     def test_create_user_with_inactive_status(self, repository: DynamoDBUserRepository) -> None:
         """Test creating an inactive user."""
-        inactive_user = User(email="inactive@example.com", hashed_password="hashed_pass", is_active=False)
+        inactive_user = User(
+            email="inactive@example.com", name="Inactive User", hashed_password="hashed_pass", is_active=False
+        )
 
         created_user = repository.create(inactive_user)
 
@@ -106,7 +108,9 @@ class TestDynamoDBUserRepository:
 
     def test_update_user_not_found(self, repository: DynamoDBUserRepository) -> None:
         """Test updating non-existent user raises exception."""
-        non_existent_user = User(email="ghost@example.com", hashed_password="hashed", is_active=True)
+        non_existent_user = User(
+            email="ghost@example.com", name="Ghost User", hashed_password="hashed", is_active=True
+        )
 
         with pytest.raises(UserNotFoundException):
             repository.update(non_existent_user)
@@ -170,7 +174,9 @@ class TestDynamoDBUserRepository:
 
     def test_create_user_with_special_characters_in_email(self, repository: DynamoDBUserRepository) -> None:
         """Test creating user with special characters in email."""
-        special_user = User(email="test+tag@example.co.uk", hashed_password="hashed_password", is_active=True)
+        special_user = User(
+            email="test+tag@example.co.uk", name="Special User", hashed_password="hashed_password", is_active=True
+        )
 
         created_user = repository.create(special_user)
         assert created_user.email == special_user.email

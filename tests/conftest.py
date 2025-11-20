@@ -3,7 +3,7 @@
 import os
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import boto3
 import pytest
@@ -292,6 +292,28 @@ def mock_vision_response_no_labels() -> list[dict[str, Any]]:
     return []
 
 
+@pytest.fixture(scope="session", autouse=True)
+def mock_google_vision_client_globally() -> Generator[None, None, None]:
+    """Mock Google Vision client globally for all tests to avoid authentication errors."""
+    with patch("app.infrastructure.ai.google_vision_service.vision.ImageAnnotatorClient") as mock_client_class:
+        # Create a mock client instance
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+
+        # Setup default response for label detection
+        mock_label = MagicMock()
+        mock_label.description = "Test"
+        mock_label.score = 0.95
+
+        mock_response = MagicMock()
+        mock_response.label_annotations = [mock_label]
+        mock_response.error.message = ""
+
+        mock_client.label_detection.return_value = mock_response
+
+        yield
+
+
 # ============================================================================
 # Factory Fixtures
 # ============================================================================
@@ -307,6 +329,7 @@ def user_factory() -> type:
             """Create a user with optional overrides."""
             defaults = {
                 "email": fake.email(),
+                "name": fake.name(),
                 "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyAJ3xIqP4iq",
                 "is_active": True,
             }

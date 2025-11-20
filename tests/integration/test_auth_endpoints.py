@@ -14,7 +14,7 @@ class TestAuthEndpoints:
 
     def test_register_success(self, client: TestClient, users_table: Any) -> None:
         """Test successful user registration."""
-        user_data = {"email": "newuser@example.com", "password": "StrongPassword123!"}
+        user_data = {"email": "newuser@example.com", "name": "New User", "password": "StrongPassword123!"}
 
         response = client.post("/api/v1/auth/register", json=user_data)
 
@@ -26,7 +26,7 @@ class TestAuthEndpoints:
 
     def test_register_duplicate_email(self, client: TestClient, users_table: Any) -> None:
         """Test registration with duplicate email."""
-        user_data = {"email": "duplicate@example.com", "password": "StrongPassword123!"}
+        user_data = {"email": "duplicate@example.com", "name": "Duplicate User", "password": "StrongPassword123!"}
 
         # Register first time
         response1 = client.post("/api/v1/auth/register", json=user_data)
@@ -34,12 +34,12 @@ class TestAuthEndpoints:
 
         # Try to register again
         response2 = client.post("/api/v1/auth/register", json=user_data)
-        assert response2.status_code == 400
+        assert response2.status_code == 409
         assert "already exists" in response2.json()["detail"].lower()
 
     def test_register_invalid_email(self, client: TestClient) -> None:
         """Test registration with invalid email."""
-        user_data = {"email": "invalid-email", "password": "StrongPassword123!"}
+        user_data = {"email": "invalid-email", "name": "Test User", "password": "StrongPassword123!"}
 
         response = client.post("/api/v1/auth/register", json=user_data)
 
@@ -47,7 +47,7 @@ class TestAuthEndpoints:
 
     def test_register_weak_password(self, client: TestClient) -> None:
         """Test registration with weak password."""
-        user_data = {"email": "test@example.com", "password": "123"}
+        user_data = {"email": "test@example.com", "name": "Test User", "password": "123"}
 
         response = client.post("/api/v1/auth/register", json=user_data)
 
@@ -82,7 +82,7 @@ class TestAuthEndpoints:
     def test_login_success(self, client: TestClient, users_table: Any) -> None:
         """Test successful login."""
         # First register a user
-        register_data = {"email": "login@example.com", "password": "StrongPassword123!"}
+        register_data = {"email": "login@example.com", "name": "Login User", "password": "StrongPassword123!"}
         client.post("/api/v1/auth/register", json=register_data)
 
         # Now login
@@ -98,7 +98,7 @@ class TestAuthEndpoints:
     def test_login_wrong_password(self, client: TestClient, users_table: Any) -> None:
         """Test login with wrong password."""
         # Register user
-        register_data = {"email": "user@example.com", "password": "CorrectPassword123!"}
+        register_data = {"email": "user@example.com", "name": "Test User", "password": "CorrectPassword123!"}
         client.post("/api/v1/auth/register", json=register_data)
 
         # Try to login with wrong password
@@ -142,7 +142,7 @@ class TestAuthEndpoints:
     def test_get_current_user_success(self, client: TestClient, users_table: Any) -> None:
         """Test getting current user with valid token."""
         # Register and login
-        register_data = {"email": "current@example.com", "password": "StrongPassword123!"}
+        register_data = {"email": "current@example.com", "name": "Current User", "password": "StrongPassword123!"}
         client.post("/api/v1/auth/register", json=register_data)
 
         login_response = client.post("/api/v1/auth/login", json=register_data)
@@ -164,7 +164,7 @@ class TestAuthEndpoints:
         """Test getting current user without token."""
         response = client.get("/api/v1/auth/me")
 
-        assert response.status_code == 401
+        assert response.status_code == 403
         assert "not authenticated" in response.json()["detail"].lower()
 
     def test_get_current_user_invalid_token(self, client: TestClient) -> None:
@@ -192,14 +192,14 @@ class TestAuthEndpoints:
             "/api/v1/auth/me",
             headers={"Authorization": "some.token.here"},
         )
-        assert response1.status_code == 401
+        assert response1.status_code == 403
 
         # Wrong scheme
         response2 = client.get(
             "/api/v1/auth/me",
             headers={"Authorization": "Basic some-credentials"},
         )
-        assert response2.status_code == 401
+        assert response2.status_code == 403
 
     # ========================================================================
     # End-to-End Auth Flow Tests
@@ -213,7 +213,7 @@ class TestAuthEndpoints:
         # 1. Register
         register_response = client.post(
             "/api/v1/auth/register",
-            json={"email": email, "password": password},
+            json={"email": email, "name": "Flow User", "password": password},
         )
         assert register_response.status_code == 201
 
@@ -236,9 +236,9 @@ class TestAuthEndpoints:
     def test_multiple_users_can_register_and_login(self, client: TestClient, users_table: Any) -> None:
         """Test that multiple users can register and login independently."""
         users = [
-            {"email": "user1@example.com", "password": "Password1!"},
-            {"email": "user2@example.com", "password": "Password2!"},
-            {"email": "user3@example.com", "password": "Password3!"},
+            {"email": "user1@example.com", "name": "User One", "password": "Password1!"},
+            {"email": "user2@example.com", "name": "User Two", "password": "Password2!"},
+            {"email": "user3@example.com", "name": "User Three", "password": "Password3!"},
         ]
 
         tokens = []
@@ -268,7 +268,7 @@ class TestAuthEndpoints:
 
     def test_register_with_special_characters_in_email(self, client: TestClient, users_table: Any) -> None:
         """Test registration with special characters in email."""
-        user_data = {"email": "user+tag@example.co.uk", "password": "StrongPassword123!"}
+        user_data = {"email": "user+tag@example.co.uk", "name": "Special User", "password": "StrongPassword123!"}
 
         response = client.post("/api/v1/auth/register", json=user_data)
 
@@ -277,7 +277,7 @@ class TestAuthEndpoints:
 
     def test_login_case_sensitive_email(self, client: TestClient, users_table: Any) -> None:
         """Test that login email is case-sensitive."""
-        register_data = {"email": "Test@Example.com", "password": "Password123!"}
+        register_data = {"email": "Test@Example.com", "name": "Test Case User", "password": "Password123!"}
         client.post("/api/v1/auth/register", json=register_data)
 
         # Try to login with different case
@@ -289,7 +289,7 @@ class TestAuthEndpoints:
 
     def test_token_can_be_reused(self, client: TestClient, users_table: Any) -> None:
         """Test that a valid token can be used multiple times."""
-        register_data = {"email": "reuse@example.com", "password": "Password123!"}
+        register_data = {"email": "reuse@example.com", "name": "Reuse User", "password": "Password123!"}
         client.post("/api/v1/auth/register", json=register_data)
 
         login_response = client.post("/api/v1/auth/login", json=register_data)

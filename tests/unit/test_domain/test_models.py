@@ -23,9 +23,10 @@ class TestUserModels:
 
     def test_user_model_creation(self) -> None:
         """Test creating a User model with valid data."""
-        user = User(email="test@example.com", hashed_password="hashed_password_here")
+        user = User(email="test@example.com", name="Test User", hashed_password="hashed_password_here")
 
         assert user.email == "test@example.com"
+        assert user.name == "Test User"
         assert user.hashed_password == "hashed_password_here"
         assert user.is_active is True
         assert isinstance(user.created_at, datetime)
@@ -33,19 +34,20 @@ class TestUserModels:
     def test_user_model_with_invalid_email(self) -> None:
         """Test that User model validates email format."""
         with pytest.raises(ValidationError):
-            User(email="invalid-email", hashed_password="hashed_password")
+            User(email="invalid-email", name="Test User", hashed_password="hashed_password")
 
     def test_user_create_model(self) -> None:
         """Test creating a UserCreate model."""
-        user_create = UserCreate(email="test@example.com", password="password123")
+        user_create = UserCreate(email="test@example.com", name="Test User", password="password123")
 
         assert user_create.email == "test@example.com"
+        assert user_create.name == "Test User"
         assert user_create.password == "password123"
 
     def test_user_create_password_min_length(self) -> None:
         """Test that UserCreate validates password minimum length."""
         with pytest.raises(ValidationError) as exc_info:
-            UserCreate(email="test@example.com", password="short")
+            UserCreate(email="test@example.com", name="Test User", password="short")
 
         errors = exc_info.value.errors()
         assert any("at least 8 characters" in str(error) for error in errors)
@@ -60,9 +62,10 @@ class TestUserModels:
     def test_user_response_model(self) -> None:
         """Test creating a UserResponse model."""
         now = datetime.utcnow()
-        user_response = UserResponse(email="test@example.com", is_active=True, created_at=now)
+        user_response = UserResponse(email="test@example.com", name="Test User", is_active=True, created_at=now)
 
         assert user_response.email == "test@example.com"
+        assert user_response.name == "Test User"
         assert user_response.is_active is True
         assert user_response.created_at == now
 
